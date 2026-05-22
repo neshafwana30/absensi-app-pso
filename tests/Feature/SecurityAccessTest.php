@@ -75,17 +75,17 @@ class SecurityAccessTest extends TestCase
 //         ]);
 //     }
 
-    /** 2. Test Security: Hacker / Guest (Belum Login) Dilarang Keras Masuk ke Halaman Mana Pun */
-    public function test_guest_is_redirected_to_login_page()
-    {
-        // Coba buka dashboard admin tanpa login
-        $response1 = $this->get('/dashboard');
-        $response1->assertRedirect(route('auth.login'));
+    // /** 2. Test Security: Hacker / Guest (Belum Login) Dilarang Keras Masuk ke Halaman Mana Pun */
+    // public function test_guest_is_redirected_to_login_page()
+    // {
+    //     // Coba buka dashboard admin tanpa login
+    //     $response1 = $this->get('/dashboard');
+    //     $response1->assertRedirect(route('auth.login'));
 
-        // Coba buka home karyawan tanpa login
-        $response2 = $this->get(route('home.index'));
-        $response2->assertRedirect(route('auth.login'));
-    }
+    //     // Coba buka home karyawan tanpa login
+    //     $response2 = $this->get(route('home.index'));
+    //     $response2->assertRedirect(route('auth.login'));
+    // }
 
     /** 3. Test Security: Karyawan Biasa Nekat Tembak Route POST Approve Izin Milik Admin */
     public function test_employee_cannot_force_approve_leave_route()

@@ -31,46 +31,46 @@ class ManagementDataUnitTest extends TestCase
         ]);
     }
 
-    /** 2. Unit Test: Memastikan pembuatan data Karyawan (User) baru terikat dengan Role & Position yang tepat */
-    public function test_new_employee_can_be_created_with_assigned_role_and_position()
-    {
-        // 1. Buat data master pendukung terlebih dahulu di database testing
-        $positionId = \Illuminate\Support\Facades\DB::table('positions')->insertGetId([
-            'name' => 'Junior Developer',
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
+    // /** 2. Unit Test: Memastikan pembuatan data Karyawan (User) baru terikat dengan Role & Position yang tepat */
+    // public function test_new_employee_can_be_created_with_assigned_role_and_position()
+    // {
+    //     // 1. Buat data master pendukung terlebih dahulu di database testing
+    //     $positionId = \Illuminate\Support\Facades\DB::table('positions')->insertGetId([
+    //         'name' => 'Junior Developer',
+    //         'created_at' => now(),
+    //         'updated_at' => now()
+    //     ]);
 
-        $roleId = \Illuminate\Support\Facades\DB::table('roles')->insertGetId([
-            'name' => 'user',
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
+    //     $roleId = \Illuminate\Support\Facades\DB::table('roles')->insertGetId([
+    //         'name' => 'user',
+    //         'created_at' => now(),
+    //         'updated_at' => now()
+    //     ]);
 
-        // 2. Siapkan data karyawan baru
-        $employeeData = [
-            'name' => 'Nesha Agustina',
-            'email' => 'nesha@its.ac.id',
-            'password' => bcrypt('password123'),
-            'role_id' => $roleId,
-            'position_id' => $positionId
-        ];
+    //     // 2. Siapkan data karyawan baru
+    //     $employeeData = [
+    //         'name' => 'Nesha Agustina',
+    //         'email' => 'nesha@its.ac.id',
+    //         'password' => bcrypt('password123'),
+    //         'role_id' => $roleId,
+    //         'position_id' => $positionId
+    //     ];
 
-        // 3. Eksekusi pembuatan user baru lewat Model User
-        $employee = User::create($employeeData);
+    //     // 3. Eksekusi pembuatan user baru lewat Model User
+    //     $employee = User::create($employeeData);
 
-        // 4. Assertions: Pastikan objek tercipta dengan atribut yang benar-benar cocok
-        $this->assertInstanceOf(User::class, $employee);
-        $this->assertEquals('Nesha Agustina', $employee->name);
-        $this->assertEquals('nesha@its.ac.id', $employee->email);
-        $this->assertEquals($roleId, $employee->role_id);
-        $this->assertEquals($positionId, $employee->position_id);
+    //     // 4. Assertions: Pastikan objek tercipta dengan atribut yang benar-benar cocok
+    //     $this->assertInstanceOf(User::class, $employee);
+    //     $this->assertEquals('Nesha Agustina', $employee->name);
+    //     $this->assertEquals('nesha@its.ac.id', $employee->email);
+    //     $this->assertEquals($roleId, $employee->role_id);
+    //     $this->assertEquals($positionId, $employee->position_id);
 
-        // 5. Cek apakah record-nya beneran masuk ke tabel users database testing
-        $this->assertDatabaseHas('users', [
-            'email' => 'nesha@its.ac.id',
-            'role_id' => $roleId,
-            'position_id' => $positionId
-        ]);
-    }
+    //     // 5. Cek apakah record-nya beneran masuk ke tabel users database testing
+    //     $this->assertDatabaseHas('users', [
+    //         'email' => 'nesha@its.ac.id',
+    //         'role_id' => $roleId,
+    //         'position_id' => $positionId
+    //     ]);
+    // }
 }

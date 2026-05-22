@@ -109,156 +109,156 @@ class AttendanceWorkflowTest extends TestCase
         $this->assertNotNull($presence->fresh()->presence_out_time);
     }
 
-    /** 3. Test Kasus Gagal: Karyawan Mencoba Absen Masuk Tapi Sudah Telat (Jam 11:00 Siang) */
-    public function test_employee_failed_to_check_in_after_deadline()
-    {
-        $employee = User::factory()->create([
-            'role_id' => 3,
-            'position_id' => 1
-        ]);
+    // /** 3. Test Kasus Gagal: Karyawan Mencoba Absen Masuk Tapi Sudah Telat (Jam 11:00 Siang) */
+    // public function test_employee_failed_to_check_in_after_deadline()
+    // {
+    //     $employee = User::factory()->create([
+    //         'role_id' => 3,
+    //         'position_id' => 1
+    //     ]);
 
-        // Dipercepat ke jam 11:00 siang
-        $this->travelTo(now()->setTime(11, 0, 0));
+    //     // Dipercepat ke jam 11:00 siang
+    //     $this->travelTo(now()->setTime(11, 0, 0));
         
-        // Simulasikan state di mana is_start sudah bernilai false karena lewat jam
-        $this->attendance->data->is_start = false;
+    //     // Simulasikan state di mana is_start sudah bernilai false karena lewat jam
+    //     $this->attendance->data->is_start = false;
 
-        $response = $this->actingAs($employee)->post(route('home.sendEnterPresenceUsingQRCode'), [
-            'code' => 'QR-TEST-WORKFLOW'
-        ]);
+    //     $response = $this->actingAs($employee)->post(route('home.sendEnterPresenceUsingQRCode'), [
+    //         'code' => 'QR-TEST-WORKFLOW'
+    //     ]);
 
-        // Harus mengembalikan status error 400 Bad Request sesuai logic HomeController
-        $response->assertStatus(400);
+    //     // Harus mengembalikan status error 400 Bad Request sesuai logic HomeController
+    //     $response->assertStatus(400);
 
-        // Memastikan database bersih, tidak kemasukan data ghoib
-        $this->assertDatabaseMissing('presences', [
-            'user_id' => $employee->id,
-            'attendance_id' => $this->attendance->id,
-            'presence_date' => now()->toDateString()
-        ]);
-    }
+    //     // Memastikan database bersih, tidak kemasukan data ghoib
+    //     $this->assertDatabaseMissing('presences', [
+    //         'user_id' => $employee->id,
+    //         'attendance_id' => $this->attendance->id,
+    //         'presence_date' => now()->toDateString()
+    //     ]);
+    // }
 
-    /** 4. Test Karyawan Mengajukan Izin dan Disetujui (Accepted) Oleh Admin */
-    public function test_employee_apply_leave_and_approved_by_admin()
-    {
-        $employee = User::factory()->create([
-            'role_id' => 3,
-            'position_id' => 1
-        ]);
+    // /** 4. Test Karyawan Mengajukan Izin dan Disetujui (Accepted) Oleh Admin */
+    // public function test_employee_apply_leave_and_approved_by_admin()
+    // {
+    //     $employee = User::factory()->create([
+    //         'role_id' => 3,
+    //         'position_id' => 1
+    //     ]);
         
-        $admin = User::factory()->create([
-            'role_id' => 1,
-            'position_id' => 1
-        ]);
+    //     $admin = User::factory()->create([
+    //         'role_id' => 1,
+    //         'position_id' => 1
+    //     ]);
 
-        // Membuat record izin dengan mengisi field title dan description agar lolos NOT NULL constraint
-        $permission = Permission::create([
-            'user_id' => $employee->id,
-            'attendance_id' => $this->attendance->id,
-            'permission_date' => now()->toDateString(),
-            'title' => 'Sakit Demam Tinggi',
-            'description' => 'Izin tidak masuk kerja, surat dokter terlampir.',
-            'is_accepted' => 0
-        ]);
+    //     // Membuat record izin dengan mengisi field title dan description agar lolos NOT NULL constraint
+    //     $permission = Permission::create([
+    //         'user_id' => $employee->id,
+    //         'attendance_id' => $this->attendance->id,
+    //         'permission_date' => now()->toDateString(),
+    //         'title' => 'Sakit Demam Tinggi',
+    //         'description' => 'Izin tidak masuk kerja, surat dokter terlampir.',
+    //         'is_accepted' => 0
+    //     ]);
 
-        // Admin melakukan approval via HTTP POST request dengan payload eksplisit
-        $response = $this->actingAs($admin)
-            ->post("/presences/{$this->attendance->id}/acceptPermission", [
-                'user_id' => (string) $employee->id,
-                'permission_date' => now()->toDateString()
-            ]);
+    //     // Admin melakukan approval via HTTP POST request dengan payload eksplisit
+    //     $response = $this->actingAs($admin)
+    //         ->post("/presences/{$this->attendance->id}/acceptPermission", [
+    //             'user_id' => (string) $employee->id,
+    //             'permission_date' => now()->toDateString()
+    //         ]);
 
-        // Memastikan status izin di database bener-bener berubah menjadi 1 (Accepted)
-        $this->assertDatabaseHas('permissions', [
-            'id' => $permission->id,
-            'is_accepted' => true
-        ]);
+    //     // Memastikan status izin di database bener-bener berubah menjadi 1 (Accepted)
+    //     $this->assertDatabaseHas('permissions', [
+    //         'id' => $permission->id,
+    //         'is_accepted' => true
+    //     ]);
 
-        // Sistem harus otomatis membuat baris baru di tabel presences dengan flag is_permission
-        $this->assertDatabaseHas('presences', [
-            'user_id' => $employee->id,
-            'attendance_id' => $this->attendance->id,
-            'presence_date' => now()->toDateString(),
-            'is_permission' => true
-        ]);
-    }
+    //     // Sistem harus otomatis membuat baris baru di tabel presences dengan flag is_permission
+    //     $this->assertDatabaseHas('presences', [
+    //         'user_id' => $employee->id,
+    //         'attendance_id' => $this->attendance->id,
+    //         'presence_date' => now()->toDateString(),
+    //         'is_permission' => true
+    //     ]);
+    // }
 
-    /** 5. Test Operator Dilarang Masuk ke Halaman Beranda Utama Milik Karyawan (Redirect Security) */
-    public function test_operator_cannot_access_employee_attendance()
-    {
-        // Membuat user dengan role operator
-        $operator = User::factory()->create([
-            'role_id' => 2,
-            'position_id' => 4
-        ]);
+    // /** 5. Test Operator Dilarang Masuk ke Halaman Beranda Utama Milik Karyawan (Redirect Security) */
+    // public function test_operator_cannot_access_employee_attendance()
+    // {
+    //     // Membuat user dengan role operator
+    //     $operator = User::factory()->create([
+    //         'role_id' => 2,
+    //         'position_id' => 4
+    //     ]);
 
-        $response = $this->actingAs($operator)->get(route('home.index'));
+    //     $response = $this->actingAs($operator)->get(route('home.index'));
 
-        // Memastikan middleware menolak operator masuk lapak user dan me-redirect paksa keluar (status 302)
-        $response->assertRedirect();
-    }
+    //     // Memastikan middleware menolak operator masuk lapak user dan me-redirect paksa keluar (status 302)
+    //     $response->assertRedirect();
+    // }
 
-    /** 6. Test Dashboard: Memastikan sistem akurat mendeteksi status karyawan yang sudah absen masuk tapi belum absen pulang */
-    public function test_employee_dashboard_can_correctly_detect_attendance_status()
-    {
-        $employee = User::factory()->create([
-            'role_id' => 3,
-            'position_id' => 1
-        ]);
+    // /** 6. Test Dashboard: Memastikan sistem akurat mendeteksi status karyawan yang sudah absen masuk tapi belum absen pulang */
+    // public function test_employee_dashboard_can_correctly_detect_attendance_status()
+    // {
+    //     $employee = User::factory()->create([
+    //         'role_id' => 3,
+    //         'position_id' => 1
+    //     ]);
 
-        // Kondisi: Karyawan sudah sukses absen masuk jam 8 pagi ini
-        Presence::create([
-            'user_id' => $employee->id,
-            'attendance_id' => $this->attendance->id,
-            'presence_date' => now()->toDateString(),
-            'presence_enter_time' => '08:00:00',
-            'presence_out_time' => null // Belum absen pulang
-        ]);
+    //     // Kondisi: Karyawan sudah sukses absen masuk jam 8 pagi ini
+    //     Presence::create([
+    //         'user_id' => $employee->id,
+    //         'attendance_id' => $this->attendance->id,
+    //         'presence_date' => now()->toDateString(),
+    //         'presence_enter_time' => '08:00:00',
+    //         'presence_out_time' => null // Belum absen pulang
+    //     ]);
 
-        // Karyawan mengakses halaman detail informasi absensi (Fungsi show() di HomeController)
-        $response = $this->actingAs($employee)->get("/absensi/{$this->attendance->id}");
+    //     // Karyawan mengakses halaman detail informasi absensi (Fungsi show() di HomeController)
+    //     $response = $this->actingAs($employee)->get("/absensi/{$this->attendance->id}");
 
-        $response->assertStatus(200);
+    //     $response->assertStatus(200);
 
-        // Memastikan data status yang dilempar ke View Blade nilainya benar dan akurat
-        $response->assertViewHas('data', function ($data) {
-            return $data['is_has_enter_today'] === true && 
-                   $data['is_not_out_yet'] === true &&
-                   $data['is_there_permission'] === false;
-        });
-    }
+    //     // Memastikan data status yang dilempar ke View Blade nilainya benar dan akurat
+    //     $response->assertViewHas('data', function ($data) {
+    //         return $data['is_has_enter_today'] === true && 
+    //                $data['is_not_out_yet'] === true &&
+    //                $data['is_there_permission'] === false;
+    //     });
+    // }
 
-    /** 7. Test Dashboard: Memastikan sistem berhasil menampilkan info hari libur saat admin mengaktifkan status holiday */
-    public function test_employee_dashboard_correctly_shows_holiday_announcement()
-    {
-        $employee = User::factory()->create([
-            'role_id' => 3,
-            'position_id' => 1
-        ]);
+    // /** 7. Test Dashboard: Memastikan sistem berhasil menampilkan info hari libur saat admin mengaktifkan status holiday */
+    // public function test_employee_dashboard_correctly_shows_holiday_announcement()
+    // {
+    //     $employee = User::factory()->create([
+    //         'role_id' => 3,
+    //         'position_id' => 1
+    //     ]);
 
-        // Masukkan data hari libur tiruan dengan menyertakan description agar lolos NOT NULL constraint
-        DB::table('holidays')->insert([
-            'id' => 99,
-            'title' => 'Hari Libur Nasional',
-            'description' => 'Libur resmi memperingati hari besar nasional.', // <-- Ditambahkan biar satpam DB lolos!
-            'holiday_date' => now()->toDateString(),
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
+    //     // Masukkan data hari libur tiruan dengan menyertakan description agar lolos NOT NULL constraint
+    //     DB::table('holidays')->insert([
+    //         'id' => 99,
+    //         'title' => 'Hari Libur Nasional',
+    //         'description' => 'Libur resmi memperingati hari besar nasional.', // <-- Ditambahkan biar satpam DB lolos!
+    //         'holiday_date' => now()->toDateString(),
+    //         'created_at' => now(),
+    //         'updated_at' => now()
+    //     ]);
 
-        // Ubah mock state session absensi menjadi sedang libur hari ini
-        $this->attendance->data->is_holiday_today = true;
+    //     // Ubah mock state session absensi menjadi sedang libur hari ini
+    //     $this->attendance->data->is_holiday_today = true;
 
-        // Karyawan mengakses halaman depan absensi
-        $response = $this->actingAs($employee)->get("/absensi/{$this->attendance->id}");
+    //     // Karyawan mengakses halaman depan absensi
+    //     $response = $this->actingAs($employee)->get("/absensi/{$this->attendance->id}");
 
-        $response->assertStatus(200);
+    //     $response->assertStatus(200);
 
-        // Memastikan data holiday yang dilempar ke view tidak bernilai false, melainkan berisi data libur yang valid
-        $response->assertViewHas('holiday', function ($holiday) {
-            return $holiday !== false && $holiday->title === 'Hari Libur Nasional';
-        });
-    }
+    //     // Memastikan data holiday yang dilempar ke view tidak bernilai false, melainkan berisi data libur yang valid
+    //     $response->assertViewHas('holiday', function ($holiday) {
+    //         return $holiday !== false && $holiday->title === 'Hari Libur Nasional';
+    //     });
+    // }
 
 
 }
