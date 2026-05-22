@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # Service untuk Aplikasi Laravel + Nginx
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: absensi-app:latest
+    container_name: absensi_app_container
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www
+    depends_on:
+      - db
+    networks:
+      - absensi-network
+
+  # Service untuk Database PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: absensi_db_container
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: absensi_db
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: secret_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - absensi-network
+
+networks:
+  absensi-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+    driver: local
