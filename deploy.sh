@@ -6,5 +6,5 @@ sed -i 's|root /home/site/wwwroot;|root /home/site/wwwroot/public;|g' /etc/nginx
 # 2. Masukkan aturan URL routing Laravel biar menu-menu di web gak eror 404
 sed -i 's|try_files $uri $uri/ =404;|try_files $uri $uri/ /index.php?$query_string;|g' /etc/nginx/sites-available/default
 
-# 3. Reload Nginx secara aman
-sudo service nginx reload
+# 3. Reload Nginx secara aman (Langsung panggil karena sudah otomatis root)
+service nginx reload
