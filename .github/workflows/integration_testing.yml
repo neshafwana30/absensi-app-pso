@@ -43,8 +43,17 @@ jobs:
       - name: Generate Application Key
         run: php artisan key:generate --env=testing
 
+      # Cari bagian ini:
       - name: Run Migrations for Testing
         run: php artisan migrate --env=testing
+        # Tambahkan blok env di bawah ini agar proses migrate tahu jalan menuju database:
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: absensi_db_testing
+          DB_USERNAME: dev_user
+          DB_PASSWORD: secret_password
 
       - name: Execute PHPUnit Tests
         run: php artisan test
