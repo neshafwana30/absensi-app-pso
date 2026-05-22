@@ -1,0 +1,57 @@
+name: Automated PHPUnit Testing
+
+on:
+  push:
+    branches: ["main", "development"]
+  pull_request:
+    branches: ["main", "development"]
+
+jobs:
+  laravel-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: absensi_db_testing
+          POSTGRES_USER: dev_user
+          POSTGRES_PASSWORD: secret_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1" # Sesuaikan dengan versi PHP kelompokmu
+          extensions: mbstring, dom, fileinfo, pdo, pdo_pgsql
+
+      - name: Copy .env.testing
+        run: php -r "file_exists('.env.testing') || copy('.env.example', '.env.testing');"
+
+      - name: Install Dependencies
+        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+      - name: Generate Application Key
+        run: php artisan key:generate --env=testing
+
+      - name: Run Migrations for Testing
+        run: php artisan migrate --env=testing
+
+      - name: Execute PHPUnit Tests
+        run: php artisan test
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: absensi_db_testing
+          DB_USERNAME: dev_user
+          DB_PASSWORD: secret_password
