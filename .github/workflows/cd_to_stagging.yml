@@ -1,17 +1,17 @@
 name: Continuous Deployment to Staging
 
-# on:
-#   workflow_run:
-#     workflows: ["Automated PHPUnit Testing", "Laravel Frontend CI"]
-#     types:
-#       - completed
-#     branches: ["development"] # 💡 TAMBAHKAN BARIS INI, BUB!
-
 on:
-  push:
-    branches: ["development", "main"]
-  pull_request:
-    branches: ["development", "main"]
+  workflow_run:
+    workflows: ["Automated PHPUnit Testing", "Laravel Frontend CI"]
+    types:
+      - completed
+    branches: ["development"] # 💡 TAMBAHKAN BARIS INI, BUB!
+
+# on:
+#   push:
+#     branches: ["development", "main"]
+#   pull_request:
+#     branches: ["development", "main"]
 
 jobs:
   deploy-to-azure:

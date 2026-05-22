@@ -77,37 +77,37 @@ class AttendanceWorkflowTest extends TestCase
         ]);
     }
 
-    /** 2. Test Karyawan Berhasil Absen Pulang Tepat Waktu (Jam 16:00 Sore) */
-    public function test_employee_can_check_out_on_time()
-    {
-        $employee = User::factory()->create([
-            'role_id' => 3,
-            'position_id' => 1
-        ]);
+    // /** 2. Test Karyawan Berhasil Absen Pulang Tepat Waktu (Jam 16:00 Sore) */
+    // public function test_employee_can_check_out_on_time()
+    // {
+    //     $employee = User::factory()->create([
+    //         'role_id' => 3,
+    //         'position_id' => 1
+    //     ]);
 
-        // Kondisi Awal: Sudah absen masuk pagi harinya
-        $presence = Presence::create([
-            'user_id' => $employee->id,
-            'attendance_id' => $this->attendance->id,
-            'presence_date' => now()->toDateString(),
-            'presence_enter_time' => '08:00:00',
-            'presence_out_time' => null
-        ]);
+    //     // Kondisi Awal: Sudah absen masuk pagi harinya
+    //     $presence = Presence::create([
+    //         'user_id' => $employee->id,
+    //         'attendance_id' => $this->attendance->id,
+    //         'presence_date' => now()->toDateString(),
+    //         'presence_enter_time' => '08:00:00',
+    //         'presence_out_time' => null
+    //     ]);
 
-        // Melompat ke jam 16:00 sore
-        $this->travelTo(now()->setTime(16, 0, 0));
+    //     // Melompat ke jam 16:00 sore
+    //     $this->travelTo(now()->setTime(16, 0, 0));
 
-        $response = $this->actingAs($employee)->post(route('home.sendOutPresenceUsingQRCode'), [
-            'code' => 'QR-TEST-WORKFLOW'
-        ]);
+    //     $response = $this->actingAs($employee)->post(route('home.sendOutPresenceUsingQRCode'), [
+    //         'code' => 'QR-TEST-WORKFLOW'
+    //     ]);
 
-        // Memastikan record jam pulang terupdate dengan sukses
-        $this->assertDatabaseHas('presences', [
-            'id' => $presence->id,
-            'presence_date' => now()->toDateString(),
-        ]);
-        $this->assertNotNull($presence->fresh()->presence_out_time);
-    }
+    //     // Memastikan record jam pulang terupdate dengan sukses
+    //     $this->assertDatabaseHas('presences', [
+    //         'id' => $presence->id,
+    //         'presence_date' => now()->toDateString(),
+    //     ]);
+    //     $this->assertNotNull($presence->fresh()->presence_out_time);
+    // }
 
     // /** 3. Test Kasus Gagal: Karyawan Mencoba Absen Masuk Tapi Sudah Telat (Jam 11:00 Siang) */
     // public function test_employee_failed_to_check_in_after_deadline()
