@@ -14,7 +14,6 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          # 💡 INI DIA YANG KITA GANTI SESUAI DATA JSON ASLIMU BUB!
-          app-name: "absensi-app" 
+          app-name: "absensi-app"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .
