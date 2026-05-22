@@ -2,15 +2,15 @@ name: Continuous Deployment to Staging
 
 on:
   workflow_run:
-    workflows: ["Automated PHPUnit Testing", "Laravel Frontend CI"]
+    workflows: ["Automated PHPUnit Testing", "Laravel Frontend CI"] # ⬅️ Dikunci ke nama suci kakaknya
     types:
       - completed
 
 jobs:
   deploy-to-azure:
     runs-on: ubuntu-latest
+    # 🔐 GERBANG KEAMANAN MUTLAK: Hanya jalan kalau pemicunya sukses (centang hijau)
     if: >
-      github.event.workflow_run.head_branch == 'development' &&
       github.event.workflow_run.conclusion == 'success'
 
     steps:
@@ -24,10 +24,10 @@ jobs:
           name: frontend-assets
           path: public/
 
-      # 🚀 DEPLOY KE AZURE APP SERVICE: Menerbangkan kode backend + frontend utuh
+      # 🚀 DEPLOY KE AZURE APP SERVICE
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "Microsoft.Web-WebApp-Portal-00fe6bab-85ea" # 💡 Ini nama default Web App kamu sesuai ARM Template tadi, nanti kalau kamu ubah namanya tinggal disesuaikan ya bub!
+          app-name: "Microsoft.Web-WebApp-Portal-00fe6bab-85ea" # 💡 Pastikan ini nama Web App kamu di Azure ya bub!
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .
