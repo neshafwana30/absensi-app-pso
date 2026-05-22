@@ -1,10 +1,12 @@
 #!/bin/bash
 
-# 1. Ubah konfigurasi default Nginx ke folder public milik Laravel
-sed -i 's|root /home/site/wwwroot;|root /home/site/wwwroot/public;|g' /etc/nginx/sites-available/default
+# 1. Copas paksa gerbang utama Laravel langsung ke folder root terluar biar Nginx gak usah nyari ke folder public
+cp /home/site/wwwroot/public/index.php /home/site/wwwroot/index.php
+cp /home/site/wwwroot/public/.htaccess /home/site/wwwroot/.htaccess
 
-# 2. Masukkan aturan URL routing Laravel biar menu-menu di web gak eror 404
-sed -i 's|try_files $uri $uri/ =404;|try_files $uri $uri/ /index.php?$query_string;|g' /etc/nginx/sites-available/default
+# 2. Perbaiki jalur autoload di dalam file index yang baru dipindah agar gak error vendor
+sed -i "s|require __DIR__.'/../vendor/autoload.php'|require __DIR__.'/vendor/autoload.php'|g" /home/site/wwwroot/index.php
+sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/bootstrap/app.php'|g" /home/site/wwwroot/index.php
 
-# 3. Reload Nginx secara aman (Langsung panggil karena sudah otomatis root)
+# 3. Paksa Nginx reload konfigurasi standar
 service nginx reload
