@@ -2,9 +2,10 @@ name: Continuous Deployment to Staging
 
 on:
   workflow_run:
-    workflows: ["Automated PHPUnit Testing", "Laravel Frontend CI"] # ⬅️ Dikunci ke nama suci kakaknya
+    workflows: ["Automated PHPUnit Testing", "Laravel Frontend CI"]
     types:
       - completed
+    branches: ["development"] # 💡 TAMBAHKAN BARIS INI, BUB!
 
 jobs:
   deploy-to-azure:
@@ -28,6 +29,6 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'Microsoft.Web-WebApp-Portal-00fe6bab-85ea' # 💡 Pastikan ini nama Web App kamu di Azure ya bub!
+          app-name: "Microsoft.Web-WebApp-Portal-00fe6bab-85ea" # 💡 Pastikan ini nama Web App kamu di Azure ya bub!
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .
