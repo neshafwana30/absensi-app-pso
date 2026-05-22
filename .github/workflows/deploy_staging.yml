@@ -1,0 +1,39 @@
+name: Continuous Deployment to Staging
+
+on:
+  workflow_run:
+    workflows: ["Automated PHPUnit Testing", "Laravel Frontend CI"]
+    types:
+      - completed
+
+jobs:
+  deploy-to-staging:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.head_branch == 'development' &&
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Memeriksa Status Kelayakan Deployment
+        run: |
+          echo "Meninjau status pipeline..."
+          echo "Aktivitas pemicu: Berhasil diselesaikan di branch development."
+          echo "Melakukan verifikasi integritas kode backend dan kompilasi aset frontend..."
+
+      - name: Deploying Application via SSH to Staging Server
+        uses: appleboy/ssh-action@v1.0.3 # 🚀 Action standar untuk remote server
+        with:
+          host: ${{ secrets.STAGING_SERVER_IP }}
+          username: ${{ secrets.STAGING_SERVER_USER }}
+          key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd /var/www/absensi-app-pso
+            git pull origin development
+            composer install --no-dev --optimize-autoloader
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            echo "Aplikasi absensi-app-pso berhasil di-deploy ke lingkungan Staging! 🚀"
