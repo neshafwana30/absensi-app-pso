@@ -1,40 +1,71 @@
 name: Continuous Deployment to Staging
 
 on:
-  workflow_run:
-    workflows: ["Automated PHPUnit Testing", "Laravel Frontend CI"]
-    types:
-      - completed
-    branches: ["development"] # 💡 TAMBAHKAN BARIS INI, BUB!
-
-# on:
-#   push:
-#     branches: ["development", "main"]
-#   pull_request:
-#     branches: ["development", "main"]
+  push:
+    branches: ["development"]
 
 jobs:
+  # 🧪 JOB 1: Jalankan Testing PHPUnit duluan
+  run-phpunit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring, xml, ctype, iconv, pdo-pgsql
+
+      - name: Install Dependencies
+        run: composer install --no-ansi --no-interaction --no-scripts --prefer-dist
+
+      - name: Run Testing
+        run: ./vendor/bin/phpunit
+
+  # 📦 JOB 2: Jalankan Build Frontend (Bisa barengan atau nunggu)
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js v16
+        uses: actions/setup-node@v4
+        with:
+          node-version: "16"
+
+      - name: Install & Compile Frontend
+        run: |
+          npm ci
+          npm run prod
+
+      - name: Upload Frontend Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-frontend-assets
+          path: public/
+
+  # 🚀 JOB 3: DEPLOY KE AZURE (Hanya jalan kalau JOB 1 & JOB 2 SUKSES!)
   deploy-to-azure:
     runs-on: ubuntu-latest
-    # 🔐 GERBANG KEAMANAN MUTLAK: Hanya jalan kalau pemicunya sukses (centang hijau)
-    if: >
-      github.event.workflow_run.conclusion == 'success'
+    needs: [run-phpunit-test, build-frontend] # 🔐 GERBANG KEAMANAN MUTLAK IDAMANMU!
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 📦 AMBIL ASET FRONTEND: Download hasil compile Laravel Mix v6 dari workflow sebelah
       - name: Download Frontend Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: frontend-assets
+          name: staging-frontend-assets
           path: public/
 
-      # 🚀 DEPLOY KE AZURE APP SERVICE
+      # Mendarat live di Azure Jepang
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "Microsoft.Web-WebApp-Portal-00fe6bab-85ea" # 💡 Pastikan ini nama Web App kamu di Azure ya bub!
+          app-name: "Microsoft.Web-WebApp-Portal-00fe6bab-85ea"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .
