@@ -1,0 +1,42 @@
+name: Continuous Deployment to Staging
+
+on:
+  push:
+    branches: ["development"]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 🧪 1. SETUP PHP 8.1 UNTUK COMPOSER (Sesuai spek lock file kelompokmu)
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          extensions: mbstring, dom, fileinfo, pdo, pdo_pgsql
+
+      - name: Install PHP Dependencies
+        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+      # 📦 2. SETUP NODE 16 UNTUK LARAVEL MIX FRONTEND
+      - name: Setup Node.js v16
+        uses: actions/setup-node@v4
+        with:
+          node-version: "16"
+          cache: "npm"
+
+      - name: Install NPM & Compile Assets
+        run: |
+          npm ci
+          npm run prod
+
+      # 🚀 3. DEPLOY SEMUA BAHAN (TERMASUK VENDOR & PUBLIC) KE AZURE JEPANG
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "absensi-app"
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: .
