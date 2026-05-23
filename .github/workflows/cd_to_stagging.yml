@@ -7,42 +7,50 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 🧪 1. SETUP PHP 8.2 UNTUK COMPOSER (Sesuai spek lokal & Azure)
+      # PHP
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
           extensions: mbstring, dom, fileinfo, pdo, pdo_pgsql
 
-      # 📥 2. RITUAL INSTALASI BERSIH JINAK PLATFORM (Sama kayak di lokalmu tadi!)
+      # Composer
       - name: Install PHP Dependencies
         run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist --ignore-platform-reqs
 
-      # 📦 3. SETUP FRONTEND ASET (NPM)
+      # Node
       - name: Setup Node.js v16
         uses: actions/setup-node@v4
         with:
           node-version: "16"
           cache: "npm"
 
-      - name: Install NPM & Compile Assets
+      # Install dependency versi terkunci
+      - name: Install Frontend Dependencies
         run: |
-          npm ci
-          npm run prod
+          npm install laravel-mix@6.0.43 webpack@5.65.0 webpack-cli@4.9.1 postcss@8.4.5 --save-dev --legacy-peer-deps
 
-      # 🚀 4. DEPLOY MASAL KE AZURE NATIVE PHP STACK
+      # Build frontend
+      - name: Compile Assets
+        run: npm run prod
+
+      # Laravel cleanup
+      - name: Laravel Cleanup
+        run: |
+          php artisan config:clear
+          php artisan cache:clear
+          php artisan route:clear
+          php artisan view:clear
+
+      # Deploy
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: "absensi-app"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .
-      # 🧹 5. RITUAL PEMBERSIHAN FILE PENGGANGGU (Tambahkan ini ya bub!)
-      - name: Delete Azure Default Hosting Page
-        run: |
-          echo "Memusnahkan file hostingstart.html..."
-          rm -f hostingstart.html
