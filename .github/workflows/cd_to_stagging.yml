@@ -7,33 +7,47 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 🧪 1. SETUP PHP 8.1 UNTUK COMPOSER (Sesuai spek lock file kelompokmu)
+      # PHP
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.1"
+          php-version: "8.2"
           extensions: mbstring, dom, fileinfo, pdo, pdo_pgsql
 
+      # Composer
       - name: Install PHP Dependencies
-        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist --ignore-platform-reqs
 
-      # 📦 2. SETUP NODE 16 UNTUK LARAVEL MIX FRONTEND
+      # Node
       - name: Setup Node.js v16
         uses: actions/setup-node@v4
         with:
           node-version: "16"
           cache: "npm"
 
-      - name: Install NPM & Compile Assets
+      # Install dependency versi terkunci
+      - name: Install Frontend Dependencies
         run: |
-          npm ci
-          npm run prod
+          npm install laravel-mix@6.0.43 webpack@5.65.0 webpack-cli@4.9.1 postcss@8.4.5 --save-dev --legacy-peer-deps
 
-      # 🚀 3. DEPLOY SEMUA BAHAN (TERMASUK VENDOR & PUBLIC) KE AZURE JEPANG
+      # Build frontend
+      - name: Compile Assets
+        run: npm run prod
+
+      # Laravel cleanup
+      - name: Laravel Cleanup
+        run: |
+          php artisan config:clear
+          php artisan cache:clear
+          php artisan route:clear
+          php artisan view:clear
+
+      # Deploy
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
