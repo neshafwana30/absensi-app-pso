@@ -41,3 +41,8 @@ jobs:
           app-name: "absensi-app"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .
+      # 🧹 5. RITUAL PEMBERSIHAN FILE PENGGANGGU (Tambahkan ini ya bub!)
+      - name: Delete Azure Default Hosting Page
+        run: |
+          echo "Memusnahkan file hostingstart.html..."
+          rm -f hostingstart.html
