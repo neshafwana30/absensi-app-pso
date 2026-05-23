@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # Service untuk Aplikasi Laravel + Nginx
   app:
     build:
       context: .
@@ -11,20 +10,15 @@ services:
     restart: unless-stopped
     ports:
       - "8000:80"
-    volumes:
-      - .:/var/www
     depends_on:
       - db
     networks:
       - absensi-network
 
-  # Service untuk Database PostgreSQL
   db:
     image: postgres:15-alpine
     container_name: absensi_db_container
     restart: unless-stopped
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_DB: absensi_db
       POSTGRES_USER: dev_user
@@ -40,4 +34,3 @@ networks:
 
 volumes:
   pgdata:
-    driver: local
