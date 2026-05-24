@@ -121,7 +121,7 @@ return [
     |
     */
 
-    'key' => env('APP_KEY') ?: 'Aul1yaamalikAbsensiPSO14OKBanget',
+    'key' => env('APP_KEY') ?: (env('APP_ENV') === 'production' ? 'Aul1yaamalikAbsensiPSO14OKBanget' : 'base64:CnNBaj8K+nOe+LdiVCOh/FJNWBRdMYGk/Y9fgwK0QiM='),
 
     'cipher' => 'AES-256-CBC',
 
