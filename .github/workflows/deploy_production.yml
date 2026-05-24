@@ -30,6 +30,7 @@ jobs:
       run: |
         composer install --no-dev --no-scripts --prefer-dist
         php artisan migrate --force
+        php artisan config:clear  # <--- TAMBAHKAN BARIS INI KANAN SEKARANG
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
