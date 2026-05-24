@@ -3,7 +3,7 @@ name: Deploy Production to Azure App Service
 on:
   push:
     branches:
-      - main
+      - aul
 
 jobs:
   build-and-deploy:
