@@ -22,15 +22,15 @@ jobs:
     - name: Run Database Migration
       env:
         DB_CONNECTION: pgsql
-        DB_HOST: postgres-absensi.postgres.database.azure.com
+        DB_HOST: absensi-app-pso.postgres.database.azure.com
         DB_PORT: 5432
         DB_DATABASE: db_absensi_production
-        DB_USERNAME: neshafwana
-        DB_PASSWORD: ${{ secrets.DB_PRODUCTION_PASSWORD }} # Ini tetap karena di screenshot nggak ada _AUL-nya
+        DB_USERNAME: dev_kicau
+        DB_PASSWORD: ${{ secrets.DB_PRODUCTION_PASSWORD }}
       run: |
-        composer install --no-dev --no-scripts --prefer-dist
+        # KITA TAMBAHKAN FLAG --ignore-platform-reqs DI SINI
+        composer install --no-dev --no-scripts --prefer-dist --ignore-platform-reqs
         php artisan migrate --force
-        php artisan config:clear  # <--- TAMBAHKAN BARIS INI KANAN SEKARANG
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
