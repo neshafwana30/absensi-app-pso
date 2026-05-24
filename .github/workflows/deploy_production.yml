@@ -28,9 +28,10 @@ jobs:
         DB_USERNAME: dev_kicau
         DB_PASSWORD: ${{ secrets.DB_PRODUCTION_PASSWORD }}
       run: |
-        composer install --no-dev --no-scripts --prefer-dist --ignore-platform-reqs
-        php artisan migrate --force
-        php artisan db:seed --force  # <--- TAMBAHKAN BARIS INI SEKARANG
+              # KITA HAPUS '--no-dev' BIAR FAKER-NYA KETEMU DAN BISA SEEDING
+              composer install --no-scripts --prefer-dist --ignore-platform-reqs
+              php artisan migrate --force
+              php artisan db:seed --force
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
