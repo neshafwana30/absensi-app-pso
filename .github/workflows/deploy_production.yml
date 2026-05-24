@@ -1,0 +1,49 @@
+name: Deploy Production to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Setup PHP Environment
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: pdo, pdo_pgsql, pgsql
+
+    - name: Run Database Migration
+      env:
+        DB_CONNECTION: pgsql
+        DB_HOST: postgres-absensi.postgres.database.azure.com
+        DB_PORT: 5432
+        DB_DATABASE: db_absensi_production
+        DB_USERNAME: neshafwana
+        DB_PASSWORD: ${{ secrets.DB_PRODUCTION_PASSWORD }} # Ini tetap karena di screenshot nggak ada _AUL-nya
+      run: |
+        composer install --no-dev --no-scripts --prefer-dist
+        php artisan migrate --force
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME_AUL }} # <--- Ditambah _AUL
+        password: ${{ secrets.DOCKER_PASSWORD_AUL }} # <--- Ditambah _AUL
+
+    - name: Build and Push Docker Image
+      run: |
+        docker build -t auliyaamalik/absensi-app:latest -f ./dockerfile/Dockerfile .
+        docker push auliyaamalik/absensi-app:latest
+
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'absensi-pso-14'
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_AUL }} # <--- Ditambah _AUL

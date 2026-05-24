@@ -90,26 +90,14 @@ jobs:
           php artisan route:clear
           php artisan view:clear
 
-<<<<<<< HEAD
-# Deploy ke Azure App Service (Sudah Diaktifkan & Diperbaiki)
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: "absensi-app-14"
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_AUL }}
-          package: .
+      # - name: Build Docker Image
+      #   run: |
+      #     docker build -t neshafwana/absensi-app:latest .
 
-#cbdeh
-=======
-      - name: Build Docker Image
-        run: |
-          docker build -t neshafwana/absensi-app:latest .
+      # - name: Login Docker Hub
+      #   run: |
+      #     echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Login Docker Hub
-        run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: Push Docker Image
-        run: |
-          docker push neshafwana/absensi-app:latest
->>>>>>> 0ff148ab457ff80043f383190dc25e5f3e89c13c
+      # - name: Push Docker Image
+      #   run: |
+      #     docker push neshafwana/absensi-app:latest
