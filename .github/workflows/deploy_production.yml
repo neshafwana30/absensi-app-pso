@@ -29,8 +29,12 @@ jobs:
         DB_PASSWORD: ${{ secrets.DB_PRODUCTION_PASSWORD }}
       run: |
         composer install --no-scripts --prefer-dist --ignore-platform-reqs
-        # Pakai migrate:fresh biar database-nya kosong melompong bersih
+
+        # 1. Mengosongkan data dummy (Request Sapwa)
         php artisan migrate:fresh --force
+
+        # 2. Membuat 1 akun Admin Utama otomatis
+        php artisan tinker --execute="\\App\\Models\\User::create(['name' => 'Admin Utama', 'email' => 'admin@absensipso.com', 'password' => bcrypt('password'), 'role' => 'admin']);"
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
