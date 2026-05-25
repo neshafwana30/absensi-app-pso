@@ -29,7 +29,7 @@ jobs:
         DB_PASSWORD: ${{ secrets.DB_PRODUCTION_PASSWORD }}
       run: |
         composer install --no-scripts --prefer-dist --ignore-platform-reqs
-        # Kita pakai perintah 'migrate:fresh' untuk menghapus semua tabel lama dan buat baru yang kosong
+        # Pakai migrate:fresh biar database-nya kosong melompong bersih
         php artisan migrate:fresh --force
 
     - name: Log in to Docker Hub
