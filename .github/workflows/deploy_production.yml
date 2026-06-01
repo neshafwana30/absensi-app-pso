@@ -1,7 +1,7 @@
 name: Deploy Production to Azure App Service
 
 on:
-  push:
+  pull_request:
     branches:
       - main # <--- SEKARANG RESMI DIUBAH KE MAIN, BIAR OTOMATIS JALAN PAS MERGE KE MAIN
 
