@@ -67,6 +67,11 @@ php artisan key:generate
 composer update nesbot/carbon --ignore-platform-reqs
 ```
 
+- Jalankan migrasi sekaligus suntik data
+```
+php artisan migrate:fresh --seed
+```
+
 ## Frontend Asset Compilation (NPM)
 Kompilasi aset UI sengaja dilakukan di luar Docker untuk menjaga image tetap ringan dan menghindari dependency conflict versi Node.js.
 - Bersihkan direktori lama untuk memastikan instalasi bersih:

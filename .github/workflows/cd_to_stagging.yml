@@ -1,7 +1,7 @@
 name: Continuous Deployment to Staging
 
 on:
-  pull_request:
+  push:
     branches: ["development"]
 
 jobs:
@@ -182,3 +182,4 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push neshafwana/absensi-app:latest
+
