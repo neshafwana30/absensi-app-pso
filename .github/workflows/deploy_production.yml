@@ -73,4 +73,4 @@ jobs:
         docker build -t auliyaamalik/absensi-app:latest .
         docker push auliyaamalik/absensi-app:latest
 
-  
+
