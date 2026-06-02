@@ -1,7 +1,7 @@
 name: Deploy Production to Azure App Service
 
 on:
-  push:
+  pull_request:
     branches:
       - main # <--- SEKARANG RESMI DIUBAH KE MAIN, BIAR OTOMATIS JALAN PAS MERGE KE MAIN
 
@@ -70,7 +70,7 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        docker build -t auliyaamalik/absensi-app:latest -f ./dockerfile/Dockerfile .
+        docker build -t auliyaamalik/absensi-app:latest .
         docker push auliyaamalik/absensi-app:latest
 
   
