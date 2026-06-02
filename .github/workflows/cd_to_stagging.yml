@@ -1,7 +1,7 @@
 name: Continuous Deployment to Staging
 
 on:
-  pull_request:
+  push:
     branches: ["development"]
 
 jobs:
@@ -183,9 +183,3 @@ jobs:
         run: |
           docker push neshafwana/absensi-app:latest
 
-
-<<<<<<< HEAD:.github/workflows/cd_to_stagging.yml
-#cb
-=======
-#ok
->>>>>>> b586d5b4fe4dbea1a65a7c5b7602adca317574f4:.github/workflows/ci-staging.yml
