@@ -28,10 +28,10 @@ jobs:
     - name: Run Database Migration
       env:
         DB_CONNECTION: pgsql
-        DB_HOST: absensi-app-pso.postgres.database.azure.com
+        DB_HOST: db-absensi-pso2.postgres.database.azure.com
         DB_PORT: 5432
-        DB_DATABASE: db_absensi_production
-        DB_USERNAME: dev_kicau
+        DB_DATABASE: absensi_pso_production
+        DB_USERNAME: pso14
         DB_PASSWORD: ${{ secrets.DB_PRODUCTION_PASSWORD }}
       run: php artisan migrate --force
 
@@ -73,4 +73,3 @@ jobs:
         docker build -t auliyaamalik/absensi-app:latest .
         docker push auliyaamalik/absensi-app:latest
 
-  
