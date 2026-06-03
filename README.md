@@ -52,6 +52,41 @@ DB_DATABASE=absensi_db
 DB_USERNAME=dev_user
 DB_PASSWORD=secret_password
 ```
+## Backend Dependencies Setup (Composer)
+Langkah ini wajib dilakukan agar dependensi inti PHP terunduh sebelum Docker dijalankan.
+- Install library PHP (gunakan flag --ignore-platform-reqs agar lolos dari syarat ketat PHP 8.1 jika kamu menggunakan versi lebih tinggi):
+```
+composer install --ignore-platform-reqs
+```
+- Buat application key baru:
+```
+php artisan key:generate
+```
+- Lakukan pembaruan pada paket Carbon untuk menjinakkan error sebelum melakukan migrasi agar sistem stabil di versi PHP terbaru:
+```
+composer update nesbot/carbon --ignore-platform-reqs
+```
+
+- Jalankan migrasi sekaligus suntik data
+```
+php artisan migrate:fresh --seed
+```
+
+## Frontend Asset Compilation (NPM)
+Kompilasi aset UI sengaja dilakukan di luar Docker untuk menjaga image tetap ringan dan menghindari dependency conflict versi Node.js.
+- Bersihkan direktori lama untuk memastikan instalasi bersih:
+```
+rmdir /s /q node_modules
+del package-lock.json
+```
+- Install dependensi frontend secara spesifik untuk menghindari konflik dengan Laravel Mix v6:
+```
+npm install laravel-mix@6.0.43 webpack@5.65.0 webpack-cli@4.9.1 postcss@8.4.5 --save-dev --legacy-peer-deps
+```
+- Kompilasi aset UI agar siap digunakan:
+```
+npm run dev
+```
 
 ## Docker Setup
 Proyek ini menggunakan multi-container architecture di mana Nginx dan PHP-FPM dijalankan secara simultan di bawah pengawasan Supervisor.
