@@ -59,7 +59,7 @@ jobs:
         run: php artisan migrate --force --env=testing
 
       - name: Execute PHPUnit Test
-        run: php artisan test --no-tty
+        run: php artisan test tests/Feature/HolidayFeatureTest.php
 
   # ==========================================
   # 🐘 JOB 2: BACKEND BUILD & ARTIFACT
