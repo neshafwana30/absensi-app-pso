@@ -28,18 +28,31 @@ class HolidayCreateForm extends Component
 
     public function saveHolidays()
     {
+        // 1. Validasi format input array bertingkat
         $this->validate([
             'holidays.*.title' => 'required',
             'holidays.*.description' => 'required',
-            'holidays.*.holiday_date' => 'required|date|unique:holidays',
+            'holidays.*.holiday_date' => 'required|date',
         ]);
 
-        // alasan menggunakan create alih2 mengunakan ::insert adalah karena tidak looping untuk menambahkan created_at dan updated_at
+        // 2. Loop dan simpan aman ke PostgreSQL dengan proteksi duplikat manual
         foreach ($this->holidays as $holiday) {
-            Holiday::create($holiday);
+            
+            $isExist = Holiday::where('holiday_date', $holiday['holiday_date'])->exists();
+            if ($isExist) {
+                $this->addError('holidays', 'Tanggal ' . $holiday['holiday_date'] . ' sudah terdaftar sebagai hari libur!');
+                return;
+            }
+
+            Holiday::create([
+                'title' => $holiday['title'],
+                'description' => $holiday['description'],
+                'holiday_date' => $holiday['holiday_date']
+            ]);
         }
 
-        redirect()->route('holidays.index')->with('success', 'Data hari libur berhasil ditambahkan.');
+        // 🔥 FIX FINAL: Menggunakan cara redirect standar Livewire v2 tanpa 'navigate: true' biar ga memicu Error 500
+        return redirect()->route('holidays.index')->with('success', 'Data hari libur berhasil ditambahkan.');
     }
 
     public function render()
