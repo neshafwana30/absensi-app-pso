@@ -64,6 +64,34 @@ class HolidayEditForm extends Component
         return redirect()->route('holidays.index')->with('success', $message);
     }
 
+    /**
+     * 🔥 METHOD BARU: Fungsi Hapus Data Hari Libur
+     */
+    public function deleteHoliday()
+    {
+        if (auth()->check()) {
+            try {
+                // Ekstrak semua ID dari data array holidays yang sedang diedit
+                $ids = collect($this->holidays)->pluck('id')->filter()->toArray();
+
+                if (!empty($ids)) {
+                    // Hapus data langsung dari database
+                    Holiday::whereIn('id', $ids)->delete();
+
+                    // Mental balik ke halaman utama kalender, otomatis memicu Toast Sukses HTML kemarin
+                    return redirect()->route('holidays.index')->with('success', 'Data hari libur berhasil dihapus!');
+                }
+
+                $this->dispatchBrowserEvent('livewire-scroll', ['top' => 0]);
+                return session()->flash('failed', 'Gagal mendeteksi ID data yang ingin dihapus.');
+
+            } catch (\Exception $e) {
+                $this->dispatchBrowserEvent('livewire-scroll', ['top' => 0]);
+                return session()->flash('failed', 'Gagal menghapus data: ' . $e->getMessage());
+            }
+        }
+    }
+
     public function render()
     {
         return view('livewire.holiday-edit-form');
