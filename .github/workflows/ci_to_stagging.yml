@@ -1,7 +1,7 @@
 name: Continuous Deployment to Staging
 
 on:
-  push:
+  pull_request:
     branches: ["development"]
 
 jobs:
