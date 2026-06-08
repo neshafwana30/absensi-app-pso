@@ -80,7 +80,7 @@
 
                         if ($day['holidays']->isNotEmpty()) {
                             if ($hasApiHoliday) {
-                                $cellBgColor = 'rgba(254, 243, 199, 0.8)'; // API: Pink
+                                $cellBgColor = 'rgba(255, 235, 235, 0.8)'; // API: Pink
                             } elseif ($hasLocalHoliday) {
                                 $cellBgColor = 'rgba(254, 243, 199, 0.8)'; // Local: Kuning
                             }
