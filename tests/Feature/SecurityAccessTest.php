@@ -47,45 +47,45 @@ class SecurityAccessTest extends TestCase
         ];
     }
 
-//    /** 1. Test Kasus Paksa: Karyawan nembak URL absen pulang padahal di web tombolnya gak muncul (Jam 10 Pagi) */
-//     public function test_employee_cannot_force_check_out_if_not_the_time_yet()
-//     {
-//         $employee = User::factory()->create(['role_id' => 3, 'position_id' => 1]);
+   /** 1. Test Kasus Paksa: Karyawan nembak URL absen pulang padahal di web tombolnya gak muncul (Jam 10 Pagi) */
+    public function test_employee_cannot_force_check_out_if_not_the_time_yet()
+    {
+        $employee = User::factory()->create(['role_id' => 3, 'position_id' => 1]);
 
-//         // Sudah absen masuk jam 8
-//         $presence = Presence::create([
-//             'user_id' => $employee->id,
-//             'attendance_id' => $this->attendance->id,
-//             'presence_date' => now()->toDateString(),
-//             'presence_enter_time' => '08:00:00',
-//             'presence_out_time' => null
-//         ]);
+        // Sudah absen masuk jam 8
+        $presence = Presence::create([
+            'user_id' => $employee->id,
+            'attendance_id' => $this->attendance->id,
+            'presence_date' => now()->toDateString(),
+            'presence_enter_time' => '08:00:00',
+            'presence_out_time' => null
+        ]);
 
-//         // Lompat ke jam 10 pagi, lalu coba tembak endpoint POST secara ilegal
-//         $this->travelTo(now()->setTime(10, 0, 0));
+        // Lompat ke jam 10 pagi, lalu coba tembak endpoint POST secara ilegal
+        $this->travelTo(now()->setTime(10, 0, 0));
 
-//         $response = $this->actingAs($employee)->post(route('home.sendOutPresenceUsingQRCode'), [
-//             'code' => 'SECURE-ROUTE-TEST'
-//         ]);
+        $response = $this->actingAs($employee)->post(route('home.sendOutPresenceUsingQRCode'), [
+            'code' => 'SECURE-ROUTE-TEST'
+        ]);
 
-//         // Memastikan kolom presence_out_time di database tetap NULL (tidak bocor/jebol)
-//         $this->assertDatabaseHas('presences', [
-//             'id' => $presence->id,
-//             'presence_out_time' => null
-//         ]);
-//     }
+        // Memastikan kolom presence_out_time di database tetap NULL (tidak bocor/jebol)
+        $this->assertDatabaseHas('presences', [
+            'id' => $presence->id,
+            'presence_out_time' => null
+        ]);
+    }
 
-    // /** 2. Test Security: Hacker / Guest (Belum Login) Dilarang Keras Masuk ke Halaman Mana Pun */
-    // public function test_guest_is_redirected_to_login_page()
-    // {
-    //     // Coba buka dashboard admin tanpa login
-    //     $response1 = $this->get('/dashboard');
-    //     $response1->assertRedirect(route('auth.login'));
+    /** 2. Test Security: Hacker / Guest (Belum Login) Dilarang Keras Masuk ke Halaman Mana Pun */
+    public function test_guest_is_redirected_to_login_page()
+    {
+        // Coba buka dashboard admin tanpa login
+        $response1 = $this->get('/dashboard');
+        $response1->assertRedirect(route('auth.login'));
 
-    //     // Coba buka home karyawan tanpa login
-    //     $response2 = $this->get(route('home.index'));
-    //     $response2->assertRedirect(route('auth.login'));
-    // }
+        // Coba buka home karyawan tanpa login
+        $response2 = $this->get(route('home.index'));
+        $response2->assertRedirect(route('auth.login'));
+    }
 
     /** 3. Test Security: Karyawan Biasa Nekat Tembak Route POST Approve Izin Milik Admin */
     public function test_employee_cannot_force_approve_leave_route()
