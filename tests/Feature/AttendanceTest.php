@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-class AttendanceWorkflowTest extends TestCase
+class AttendanceTest extends TestCase
 {
     use RefreshDatabase;
 
