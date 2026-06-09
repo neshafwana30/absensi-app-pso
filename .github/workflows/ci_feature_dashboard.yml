@@ -62,7 +62,7 @@ jobs:
 
       - name: Execute PHPUnit Test
         # 🟢 Mengeksekusi file test absensi kamu yang tadi sukses 7 passed!
-        run: php artisan test tests/Feature/AttendanceWorkflowTest.php
+        run: php artisan test tests/Feature/AttendanceTest.php
 
   # ==========================================
   # 🐘 JOB 2: BACKEND BUILD & ARTIFACT
