@@ -20,3 +20,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('permissions/detail', [PermissionController::class, 'show'])->name('api.permissions.show');
+
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'healthy',
+        'timestamp' => now()->toIso8601String()
+    ], 200);
+});
