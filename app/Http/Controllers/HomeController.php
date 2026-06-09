@@ -126,11 +126,6 @@ class HomeController extends Controller
                 "message" => "Terjadi masalah pada saat melakukan absensi."
             ], 400);
 
-        // // jika absensi sudah jam pulang (is_end) dan tidak menggunakan qrcode (kebalikan)
-        // if (!$attendance->data->is_end && !$attendance->data->is_using_qrcode) // sama (harus) dengan view
-        //     return false;
-
-        // FIX: untuk memastikan, karena kalau is_end false tapi is_using_qrcode true juga gak boleh (harusnya gak mungkin di view, tapi untuk keamanan)
         if (
             !$attendance->data->is_end ||
             !$attendance->data->is_using_qrcode
