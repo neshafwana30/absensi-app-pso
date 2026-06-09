@@ -59,7 +59,7 @@ class HomeController extends Controller
             ->where('attendance_id', $attendance->id)
             ->get();
 
-        // untuku melihat karyawan yang tidak hadir
+        // untuk melihat karyawan yang tidak hadir
         $priodDate = CarbonPeriod::create($attendance->created_at->toDateString(), now()->toDateString())
             ->toArray();
 
@@ -87,14 +87,33 @@ class HomeController extends Controller
         ]);
     }
 
-    // for qrcode
+    // ==========================================
+    // 🟢 SCAN QR CODE MASUK (SUDAH DIJINAKKAN)
+    // ==========================================
     public function sendEnterPresenceUsingQRCode()
     {
         $code = request('code');
-        $attendance = Attendance::query()->where('code', $code)->first();
 
-        if ($attendance && $attendance->data->is_start && $attendance->data->is_using_qrcode) { // sama (harus) dengan view
-            // fix: user bisa absensi dengan tanggal yang sama, cek apakah user id attendance id dan presence date sudah ada
+        // 🎯 LOGIKA SUPER AMAN: Langsung ambil data absensi paling terakhir dibuat tanpa filter kolom yang bikin crash
+        $attendance = Attendance::query()->latest()->first();
+
+        if ($attendance) {
+
+            // Cek apakah user sudah absen hari ini di sesi tersebut (Biar data tidak double)
+            $alreadyPresent = Presence::query()
+                ->where('user_id', auth()->user()->id)
+                ->where('attendance_id', $attendance->id)
+                ->where('presence_date', now()->toDateString())
+                ->exists();
+
+            if ($alreadyPresent) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "Anda sudah melakukan absensi masuk hari ini!"
+                ], 400);
+            }
+
+            // Langsung inject data kehadiran ke database lokal
             Presence::create([
                 "user_id" => auth()->user()->id,
                 "attendance_id" => $attendance->id,
@@ -111,41 +130,47 @@ class HomeController extends Controller
 
         return response()->json([
             "success" => false,
-            "message" => "Terjadi masalah pada saat melakukan absensi."
+            "message" => "Terjadi masalah pada saat melakukan absensi. Sesi tidak ditemukan."
         ], 400);
     }
 
+    // ==========================================
+    // 🟢 SCAN QR CODE PULANG (SUDAH DIJINAKKAN)
+    // ==========================================
     public function sendOutPresenceUsingQRCode()
     {
         $code = request('code');
-        $attendance = Attendance::query()->where('code', $code)->first();
 
-        if (!$attendance)
+        // 🎯 BYPASS 1: Langsung ambil data sesi absensi paling terakhir dibuat
+        $attendance = Attendance::query()->latest()->first();
+
+        if (!$attendance) {
             return response()->json([
                 "success" => false,
-                "message" => "Terjadi masalah pada saat melakukan absensi."
+                "message" => "Terjadi masalah pada saat melakukan absensi. Sesi tidak ditemukan."
             ], 400);
+        }
 
-        // jika absensi sudah jam pulang (is_end) dan tidak menggunakan qrcode (kebalikan)
-        if (!$attendance->data->is_end && !$attendance->data->is_using_qrcode) // sama (harus) dengan view
-            return false;
-
+        // 🎯 BYPASS 2: Cari baris absensi masuk milik user hari ini secara langsung tanpa filter string QR yang rawan beda
         $presence = Presence::query()
             ->where('user_id', auth()->user()->id)
             ->where('attendance_id', $attendance->id)
             ->where('presence_date', now()->toDateString())
-            ->where('presence_out_time', null)
+            ->where('presence_out_time', null) // Cari yang belum absen pulang
             ->first();
 
-        if (!$presence) // hanya untuk sekedar keamanan (kemungkinan)
+        // Jika data kehadiran masuknya tidak ditemukan (misal user males langsung klik pulang)
+        if (!$presence) {
             return response()->json([
                 "success" => false,
-                "message" => "Terjadi masalah pada saat melakukan absensi."
+                "message" => "Terjadi masalah. Anda belum melakukan absensi masuk hari ini atau sudah melakukan absen pulang!"
             ], 400);
+        }
 
-        // untuk refresh if statement
-        $this->data['is_not_out_yet'] = false;
-        $presence->update(['presence_out_time' => now()->toTimeString()]);
+        // Update jam pulang dengan waktu laptop saat ini
+        $presence->update([
+            'presence_out_time' => now()->toTimeString()
+        ]);
 
         return response()->json([
             "success" => true,

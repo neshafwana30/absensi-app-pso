@@ -2,7 +2,6 @@ name: Continuous Integration - Attendance Feature Testing & Assets Build
 
 on:
   push:
-    # 🎯 Sudah diubah pas sesuai nama branch kamu!
     branches: ["feature/dashboard-user"]
 
 jobs:

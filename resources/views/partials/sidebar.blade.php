@@ -11,7 +11,7 @@
             <li class="nav-item">
                 <a class="nav-link py-2 rounded {{ request()->routeIs('positions.*') ? 'active fw-bold' : 'text-dark' }}"
                 href="{{ route('positions.index') }}">
-                    <span data-feather="tag" class="align-text-bottom">
+                    <span data-feather="tag" class="align-text-bottom"></span>
                     Jabatan / Posisi
                 </a>
             </li>
