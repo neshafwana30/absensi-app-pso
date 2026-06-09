@@ -4,7 +4,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: ./dockerfile/Dockerfile
+      dockerfile: dockerfile
     image: absensi-app:latest
     container_name: absensi_app_container
     restart: unless-stopped
