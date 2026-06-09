@@ -43,6 +43,13 @@ class HomeController extends Controller
             ->where('user_id', auth()->user()->id)
             ->first();
 
+        // 🎯 FIX STATUS & TOMBOL: Paksa status agar beneran selalu kebuka dan tombolnya muncul
+        // Kita bypass properti object data-nya langsung di sini sebelum dilempar ke Blade View
+        if (isset($attendance->data)) {
+            $attendance->data->is_start = true; // Paksa status sesi dimulai
+            $attendance->data->is_end = true;   // Paksa status jam pulang aktif agar tombol pulang keluar
+        }
+
         $data = [
             'is_has_enter_today' => $isHasEnterToday,
             'is_not_out_yet' => $presences->where('presence_out_time', null)->isNotEmpty(),
