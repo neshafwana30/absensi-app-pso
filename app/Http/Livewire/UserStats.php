@@ -1,50 +1,42 @@
 <?php
 
+// 🎯 FIX NAMESPACE: Disamakan dengan yang dicari oleh sistem kelompokmu
 namespace App\Http\Livewire;
 
 use Livewire\Component;
 use App\Models\Presence;
+use App\Models\Permission;
+use Carbon\Carbon;
 
 class UserStats extends Component
 {
-    public $totalHadir = 0;
-    public $totalIzin = 0;
-    public $totalTerlambat = 0;
+    public $totalHadir;
+    public $totalIzin;
+    public $totalTidakHadir;
 
-    // Fungsi ini otomatis jalan pertama kali saat komponen dimuat
     public function mount()
     {
-        $this->fetchStats();
-    }
+        $userId = auth()->id();
 
-    public function fetchStats()
-    {
-        $userId = auth()->user()->id;
-        $currentMonth = now()->month;
-        $currentYear = now()->year;
+        $startOfMonth = Carbon::now()->startOfMonth()->toDateString();
+        $endOfMonth = Carbon::now()->endOfMonth()->toDateString();
 
-        // 1. Hitung total Hadir bulan ini
+        // 1. HITUNG TOTAL HADIR
         $this->totalHadir = Presence::where('user_id', $userId)
-                        ->whereMonth('presence_date', $currentMonth)
-                        ->whereYear('presence_date', $currentYear)
-                        ->whereNotNull('presence_enter_time')
-                        ->where('is_permission', false)
-                        ->count();
+            ->whereBetween('presence_date', [$startOfMonth, $endOfMonth])
+            ->count();
 
-        // 2. Hitung total Izin / Sakit bulan ini
-        $this->totalIzin = Presence::where('user_id', $userId)
-                        ->whereMonth('presence_date', $currentMonth)
-                        ->whereYear('presence_date', $currentYear)
-                        ->where('is_permission', true)
-                        ->count();
+        // 2. HITUNG TOTAL IZIN
+        $this->totalIzin = Permission::where('user_id', $userId)
+            ->whereBetween('permission_date', [$startOfMonth, $endOfMonth])
+            ->where('is_accepted', true)
+            ->count();
 
-        // 3. Hitung total Terlambat (Batas jam masuk contoh: 08:00:00)
-        $this->totalTerlambat = Presence::where('user_id', $userId)
-                            ->whereMonth('presence_date', $currentMonth)
-                            ->whereYear('presence_date', $currentYear)
-                            ->whereTime('presence_enter_time', '>', '08:00:00')
-                            ->where('is_permission', false)
-                            ->count();
+        // 3. HITUNG TOTAL TIDAK HADIR (ALPA)
+        $daysPassed = Carbon::now()->day;
+        $calculatedAlpa = $daysPassed - ($this->totalHadir + $this->totalIzin);
+
+        $this->totalTidakHadir = $calculatedAlpa < 0 ? 0 : $calculatedAlpa;
     }
 
     public function render()

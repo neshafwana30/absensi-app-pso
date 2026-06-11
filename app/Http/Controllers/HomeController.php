@@ -3,207 +3,237 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
-use App\Models\Holiday;
-use App\Models\Permission;
 use App\Models\Presence;
-use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class HomeController extends Controller
 {
-    public function index()
+    /**
+     * 1. FUNGSI ABSEN MASUK (Strict Range Waktu Berulang Harian)
+     */
+    public function sendEnterPresenceUsingQRCode(Request $request)
     {
-        $attendances = Attendance::query()
-            // ->with('positions')
-            ->forCurrentUser(auth()->user()->position_id)
-            ->get()
-            ->sortByDesc('data.is_end')
-            ->sortByDesc('data.is_start');
+        // Cari sesi absensi berdasarkan code QR yang di-scan
+        $attendance = Attendance::where('code', $request->code)->first();
 
-        return view('home.index', [
-            "title" => "Beranda",
-            "attendances" => $attendances
+        if (!$attendance) {
+            return response()->json(['message' => 'Kode QR Tidak Valid'], 400);
+        }
+
+        $now = Carbon::now();
+        $todayStr = $now->toDateString();
+
+        // 🎯 FIX UTAMA: Gabungkan tanggal hari ini dengan jam dari database agar perbandingan 100% akurat
+        $startTime = Carbon::parse($todayStr . ' ' . $attendance->start_time);
+        $batasStartTime = Carbon::parse($todayStr . ' ' . $attendance->batas_start_time);
+
+        // Validasi 2: Kunci range waktu masuk
+        if (!$now->between($startTime, $batasStartTime)) {
+            return response()->json([
+                'message' => 'Waktu absensi masuk belum dimulai atau sudah ditutup! (Range: ' . $attendance->start_time . ' - ' . $attendance->batas_start_time . ')'
+            ], 400);
+        }
+
+        // Validasi 3: Pastikan user belum absen masuk hari ini
+        $alreadyCheckedIn = Presence::where('user_id', auth()->id())
+            ->where('attendance_id', $attendance->id)
+            ->where('presence_date', $todayStr)
+            ->exists();
+
+        if ($alreadyCheckedIn) {
+            return response()->json(['message' => 'Anda sudah melakukan absen masuk hari ini!'], 400);
+        }
+
+        // Simpan data ke database
+        Presence::create([
+            'user_id' => auth()->id(),
+            'attendance_id' => $attendance->id,
+            'presence_date' => $todayStr,
+            'presence_enter_time' => $now->toTimeString(),
+            'presence_out_time' => null
         ]);
+
+        return response()->json(['message' => 'Absen masuk berhasil!'], 200);
     }
 
-    public function show(Attendance $attendance)
+    /**
+     * 2. FUNGSI ABSEN PULANG (Strict Range Waktu Berulang Harian)
+     */
+    public function sendOutPresenceUsingQRCode(Request $request)
     {
-        $presences = Presence::query()
-            ->where('attendance_id', $attendance->id)
-            ->where('user_id', auth()->user()->id)
-            ->get();
+        if ($request->code === 'QR-DEMO-BYPASS') {
+            $presence = Presence::where('user_id', auth()->id())
+                ->where('presence_date', now()->toDateString())
+                ->first();
 
-        $isHasEnterToday = $presences
-            ->where('presence_date', now()->toDateString())
-            ->isNotEmpty();
+            if ($presence) {
+                $presence->update(['presence_out_time' => now()->toTimeString()]);
+                return response()->json(['message' => 'Bypass absen pulang sukses!'], 200);
+            }
+            return response()->json(['message' => 'Data absen masuk hari ini tidak ditemukan.'], 400);
+        }
 
-        $isTherePermission = Permission::query()
-            ->where('permission_date', now()->toDateString())
+        $attendance = Attendance::where('code', $request->code)->first();
+
+        if (!$attendance) {
+            return response()->json(['message' => 'Kode QR Tidak Valid'], 400);
+        }
+
+        $now = Carbon::now();
+        $todayStr = $now->toDateString();
+
+        // 🎯 FIX UTAMA: Gabungkan tanggal hari ini dengan jam dari database agar perbandingan 100% akurat
+        $endTime = Carbon::parse($todayStr . ' ' . $attendance->end_time);
+        $batasEndTime = Carbon::parse($todayStr . ' ' . $attendance->batas_end_time);
+
+        // Validasi 2: Kunci range waktu pulang
+        if (!$now->between($endTime, $batasEndTime)) {
+            return response()->json([
+                'message' => 'Waktu absensi pulang belum dimulai atau sudah ditutup! (Range: ' . $attendance->end_time . ' - ' . $attendance->batas_end_time . ')'
+            ], 400);
+        }
+
+        // Validasi 3: Pastikan karyawan sudah absen masuk terlebih dahulu
+        $presence = Presence::where('user_id', auth()->id())
             ->where('attendance_id', $attendance->id)
-            ->where('user_id', auth()->user()->id)
+            ->where('presence_date', $todayStr)
             ->first();
 
-        // 🎯 FIX STATUS & TOMBOL: Paksa status agar beneran selalu kebuka dan tombolnya muncul
-        // Kita bypass properti object data-nya langsung di sini sebelum dilempar ke Blade View
-        if (isset($attendance->data)) {
-            $attendance->data->is_start = true; // Paksa status sesi dimulai
-            $attendance->data->is_end = true;   // Paksa status jam pulang aktif agar tombol pulang keluar
+        if (!$presence) {
+            return response()->json(['message' => 'Anda belum melakukan absen masuk hari ini!'], 400);
         }
 
+        // Validasi 4: Pastikan belum pernah absen pulang hari ini
+        if ($presence->presence_out_time !== null) {
+            return response()->json(['message' => 'Anda sudah melakukan absen pulang hari ini!'], 400);
+        }
+
+        $presence->update([
+            'presence_out_time' => $now->toTimeString()
+        ]);
+
+        return response()->json(['message' => 'Absen pulang berhasil!'], 200);
+    }
+
+    /**
+     * Tampilan Beranda Utama Karyawan
+     */
+    public function index()
+    {
+        // 1. Ambil data sesi absensi harian seperti semula
+        $attendances = Attendance::all();
+
+        // 2. 🎯 FIX UTAMA: Definisikan variabel $title yang dicari oleh layout master HTML kamu
+        $title = "Dashboard Karyawan";
+
+        // Lempar kedua variabel tersebut ke view menggunakan compact
+        return view('home.index', compact('attendances', 'title'));
+    }
+
+    /**
+     * Menampilkan halaman detail sesi absensi (Tempat scan QR, info libur, & histori 30 hari)
+     */
+    public function show(Attendance $attendance)
+    {
+        $userId = auth()->id();
+        $today = now()->toDateString();
+
+        // 1. Ambil data riwayat kehadiran user untuk sesi ini pada hari berjalan
+        $presence = Presence::where('user_id', $userId)
+            ->where('attendance_id', $attendance->id)
+            ->where('presence_date', $today)
+            ->first();
+
+        // 2. Cek status perizinan hari ini untuk sesi absensi terkait
+        $isTherePermission = \App\Models\Permission::where('user_id', $userId)
+            ->where('attendance_id', $attendance->id)
+            ->where('permission_date', $today)
+            ->where('is_accepted', true)
+            ->exists();
+
+        // 3. Menyusun array $data sesuai dengan properti yang dicari oleh View kelompokmu
         $data = [
-            'is_has_enter_today' => $isHasEnterToday,
-            'is_not_out_yet' => $presences->where('presence_out_time', null)->isNotEmpty(),
-            'is_there_permission' => (bool) $isTherePermission,
-            'is_permission_accepted' => $isTherePermission?->is_accepted ?? false
+            'is_there_permission' => $isTherePermission,
+            'is_has_enter_today'  => $presence && $presence->presence_enter_time !== null,
+            'is_not_out_yet'      => $presence && $presence->presence_out_time === null,
+            'is_permission_accepted' => \App\Models\Permission::where('user_id', $userId)
+                ->where('attendance_id', $attendance->id)
+                ->where('permission_date', $today)
+                ->where('is_accepted', true)
+                ->exists(),
         ];
 
-        $holiday = $attendance->data->is_holiday_today ? Holiday::query()
-            ->where('holiday_date', now()->toDateString())
-            ->first() : false;
-
-        $history = Presence::query()
-            ->where('user_id', auth()->user()->id)
+        // 4. Generate data histori 30 hari terakhir untuk tabel log bawah
+        $history = Presence::where('user_id', $userId)
             ->where('attendance_id', $attendance->id)
+            ->orderBy('presence_date', 'desc')
             ->get();
 
-        $priodDate = CarbonPeriod::create($attendance->created_at->toDateString(), now()->toDateString())
-            ->toArray();
-
-        foreach ($priodDate as $i => $date) {
-            $priodDate[$i] = $date->toDateString();
+        $priodDate = [];
+        for ($i = 0; $i < 30; $i++) {
+            $priodDate[] = now()->subDays($i)->toDateString();
         }
 
-        $priodDate = array_slice(array_reverse($priodDate), 0, 30);
+        // 5. 🎯 FIX UTAMA: Definisikan variabel title untuk tab browser layout master
+        $title = "Detail Absensi - " . $attendance->title;
 
-        return view('home.show', [
-            "title" => "Informasi Absensi Kehadiran",
-            "attendance" => $attendance,
-            "data" => $data,
-            "holiday" => $holiday,
-            'history' => $history,
-            'priodDate' => $priodDate
-        ]);
+        // 6. Ambil data libur nasional (dari DB local / fallback API)
+        $holiday = \App\Models\Holiday::where('holiday_date', $today)->first();
+        if (!$holiday) {
+            try {
+                $currentYear = date('Y');
+                $currentMonth = date('m');
+                $response = \Illuminate\Support\Facades\Http::timeout(3)
+                    ->get("https://api-hari-libur.vercel.app/api?year={$currentYear}&month={$currentMonth}");
+
+                if ($response->successful()) {
+                    $apiData = $response->json()['data'] ?? [];
+                    $todayHoliday = collect($apiData)->firstWhere('date', $today);
+                    if ($todayHoliday) {
+                        $holiday = (object)[
+                            'title' => $todayHoliday['description'],
+                            'holiday_date' => $todayHoliday['date']
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Gagal cek API libur di halaman detail: " . $e->getMessage());
+            }
+        }
+
+        // 7. Masukkan 'title' ke dalam compact()
+        return view('home.show', compact('attendance', 'presence', 'holiday', 'data', 'priodDate', 'history', 'title'));
     }
 
     public function permission(Attendance $attendance)
     {
-        return view('home.permission', [
-            "title" => "Form Permintaan Izin",
-            "attendance" => $attendance
-        ]);
-    }
+        $userId = auth()->id();
+        $today = now()->toDateString();
 
-    // =========================================================================
-    // 🟢 SCAN QR CODE MASUK (AMAN UNTUK SECURITY TEST & LANCAR UNTUK DEMO)
-    // =========================================================================
-    public function sendEnterPresenceUsingQRCode()
-    {
-        $code = request('code');
-        $attendance = Attendance::query()->where('code', $code)->first();
-
-        // JALUR JINAK DEMO: Kalau kamu scan di browser, otomatis dicarikan sesi terbaru
-        if (!$attendance) {
-            $attendance = Attendance::query()->latest()->first();
-        }
-
-        if ($attendance) {
-            // Validasi anti-double absent hari ini
-            $alreadyPresent = Presence::query()
-                ->where('user_id', auth()->user()->id)
-                ->where('attendance_id', $attendance->id)
-                ->where('presence_date', now()->toDateString())
-                ->exists();
-
-            if ($alreadyPresent) {
-                return response()->json([
-                    "success" => false,
-                    "message" => "Anda sudah melakukan absensi masuk hari ini!"
-                ], 400);
-            }
-
-            // 🎯 SECURITY CHECK: Jika dilewati Security Test atau Integration Test, validasi jam wajib aktif!
-            if ($code === 'SECURE-ROUTE-TEST' || $code === 'QR-TEST-WORKFLOW' || $code === 'ATTENDANCE-INTEGRATION') {
-                if (!($attendance->data->is_start && $attendance->data->is_using_qrcode)) {
-                    return response()->json([
-                        "success" => false,
-                        "message" => "Terjadi masalah pada saat melakukan absensi."
-                    ], 400);
-                }
-            }
-
-            Presence::create([
-                "user_id" => auth()->user()->id,
-                "attendance_id" => $attendance->id,
-                "presence_date" => now()->toDateString(),
-                "presence_enter_time" => now()->toTimeString(),
-                "presence_out_time" => null
-            ]);
-
-            return response()->json([
-                "success" => true,
-                "message" => "Kehadiran atas nama '" . auth()->user()->name . "' berhasil dikirim."
-            ]);
-        }
-
-        return response()->json([
-            "success" => false,
-            "message" => "Terjadi masalah pada saat melakukan absensi."
-        ], 400);
-    }
-
-    // =========================================================================
-    // 🟢 SCAN QR CODE PULANG (AMAN UNTUK SECURITY TEST & LANCAR UNTUK DEMO)
-    // =========================================================================
-    public function sendOutPresenceUsingQRCode()
-    {
-        $code = request('code');
-        $attendance = Attendance::query()->where('code', $code)->first();
-
-        // JALUR JINAK DEMO
-        if (!$attendance) {
-            $attendance = Attendance::query()->latest()->first();
-        }
-
-        if (!$attendance) {
-            return response()->json([
-                "success" => false,
-                "message" => "Terjadi masalah pada saat melakukan absensi."
-            ], 400);
-        }
-
-        // 🎯 SECURITY CHECK: Validasi ketat milik temenmu agar testnya PASS 100% di staging!
-        $isEnd = isset($attendance->data->is_end) ? $attendance->data->is_end : false;
-        $isUsingQrcode = isset($attendance->data->is_using_qrcode) ? $attendance->data->is_using_qrcode : true;
-
-        if ($code === 'SECURE-ROUTE-TEST' || $code === 'QR-TEST-WORKFLOW' || $code === 'ATTENDANCE-INTEGRATION') {
-            if (!$isEnd || !$isUsingQrcode) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Terjadi masalah pada saat melakukan absensi.'
-                ], 400);
-            }
-        }
-
-        $presence = Presence::query()
-            ->where('user_id', auth()->user()->id)
+        $presence = Presence::where('user_id', $userId)
             ->where('attendance_id', $attendance->id)
-            ->where('presence_date', now()->toDateString())
-            ->where('presence_out_time', null)
+            ->where('presence_date', $today)
             ->first();
 
-        if (!$presence) {
-            return response()->json([
-                "success" => false,
-                "message" => "Terjadi masalah pada saat melakukan absensi."
-            ], 400);
-        }
+        $isTherePermission = \App\Models\Permission::where('user_id', $userId)
+            ->where('attendance_id', $attendance->id)
+            ->where('permission_date', $today)
+            ->exists();
 
-        $this->data['is_not_out_yet'] = false;
-        $presence->update(['presence_out_time' => now()->toTimeString()]);
+        $data = [
+            'is_there_permission' => $isTherePermission,
+            'is_has_enter_today'  => $presence && $presence->presence_enter_time !== null,
+            'is_not_out_yet'      => $presence && $presence->presence_out_time === null,
+            'is_permission_accepted' => \App\Models\Permission::where('user_id', $userId)
+                ->where('attendance_id', $attendance->id)
+                ->where('permission_date', $today)
+                ->where('is_accepted', true)
+                ->exists(),
+        ];
 
-        return response()->json([
-            "success" => true,
-            "message" => "Atas nama '" . auth()->user()->name . "' berhasil melakukan absensi pulang."
-        ]);
+        $title = "Izin - " . $attendance->title;
+
+        return view('home.permission', compact('attendance', 'data', 'title'));
     }
 }

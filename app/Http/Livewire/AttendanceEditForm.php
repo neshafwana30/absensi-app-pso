@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 class AttendanceEditForm extends AttendanceAbstract
 {
     public $initialCode;
+    public $displayCode; //baru
 
     public function mount()
     {
@@ -19,6 +20,7 @@ class AttendanceEditForm extends AttendanceAbstract
         $this->attendance['batas_end_time'] = substr($this->attendance['batas_end_time'], 0, -3);
 
         $this->initialCode = $this->attendance['code']; // ini untuk pengecekan/mengatasi update code
+        $this->displayCode = $this->initialCode; // ← code asli untuk ditampilkan
         $this->attendance['code'] = $this->initialCode ? true : false; // untuk kondisi apakah input code checked
 
         $this->position_ids = $this->attendance->positions()->pluck('positions.id', 'positions.id')->toArray();

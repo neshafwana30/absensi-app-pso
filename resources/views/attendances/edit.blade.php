@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 
 @section('buttons')
@@ -12,6 +13,9 @@
 @endsection
 
 @section('content')
+@php
+    $rawCode = \App\Models\Attendance::find($attendance->id)->getRawOriginal('code');
+@endphp
 <div class="row">
     <div class="col-md-7 mb-4">
         <livewire:attendance-edit-form :attendance="$attendance" />
@@ -24,14 +28,14 @@
                 <p class="text-muted small mb-4">Gunakan kode ini agar dipindai oleh karyawan/user biasa melalui menu scan.</p>
 
                 <div class="d-inline-block p-3 bg-light border rounded shadow-sm mb-3">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={{ urlencode($attendance->code) }}"
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={{ urlencode($rawCode) }}"
                          alt="QRCode Absensi"
                          class="img-fluid"
                          style="width: 230px; height: 230px; object-fit: contain;">
                 </div>
 
                 <div class="mt-2">
-                    <span class="badge bg-secondary px-3 py-2 fs-6">Raw Code: {{ $attendance->code }}</span>
+                    <span class="badge bg-secondary px-3 py-2 fs-6">Raw Code: {{ $rawCode }}</span>
                 </div>
             </div>
         </div>

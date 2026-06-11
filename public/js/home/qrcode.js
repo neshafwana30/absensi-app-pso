@@ -50,7 +50,7 @@ QRCodeScannerModal.addEventListener("shown.bs.modal", (event) => {
 
 async function handlePresence(baseurl, code) {
     try {
-        const data = await fetchWithToken(baseurl, {
+        const { res, data } = await fetchWithToken(baseurl, {
             method: "POST",
             headers: {
                 "X-Requested-With": "XMLHttpRequest",
@@ -59,25 +59,17 @@ async function handlePresence(baseurl, code) {
             body: toFormurlenconded({ code }),
         });
 
-        console.log("Respon dari server:", data);
-
-        let dataToast = {
-            title: "QRCode Absensi Pesan",
-            body: data.message || "Proses absensi selesai dilakukan.",
-            colorClass: toast.TOAST_FAILED,
-        };
-
-        if (data.success) {
-            dataToast["colorClass"] = toast.TOAST_SUCCESS;
-        }
-
-        toast.show(dataToast);
+        toast.show({
+            title: "QRCode Absensi",
+            body: data.message || "Proses absensi selesai.",
+            colorClass: res.ok ? toast.TOAST_SUCCESS : toast.TOAST_FAILED,
+        });
 
     } catch (error) {
         console.error("Gagal memproses QR Code:", error);
         toast.show({
-            title: "QRCode Absensi Pesan",
-            body: "Terjadi kesalahan koneksi ke server Laravel.",
+            title: "QRCode Absensi",
+            body: "Terjadi kesalahan koneksi ke server.",
             colorClass: toast.TOAST_FAILED
         });
     }
