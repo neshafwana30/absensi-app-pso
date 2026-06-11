@@ -72,7 +72,6 @@
         </div>
     </div>
 </div>
-
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const labels = {!! json_encode($chartLabels ?? ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']) !!};
