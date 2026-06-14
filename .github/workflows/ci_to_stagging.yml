@@ -2,13 +2,16 @@ name: Continuous Deployment to Staging
 
 on:
   pull_request:
+    types: [closed]
     branches: ["development"]
 
 jobs:
   # ==========================================
-  # 🧪 JOB 1: PHPUnit Testing
+  # 🧪 JOB 1: PHPUnit Testing (Selalu Jalan untuk Memastikan Code Aman)
   # ==========================================
   run-phpunit-test:
+    # 🎯 PENGAMAN: Seluruh rangkaian deploy hanya jalan jika PR ke development SUKSES DI-MERGE!
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     services:
@@ -182,4 +185,14 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push neshafwana/absensi-app:latest
+
+      # ==========================================
+      # ⚡ FIX UTAMA: KETUK PINTU SERVER STAGING AZURE AGAR AUTO-REFRESH
+      # ==========================================
+      - name: Trigger Azure Staging Container Refresh
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'absen-pso-stagging'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          images: 'neshafwana/absensi-app:latest'
 
