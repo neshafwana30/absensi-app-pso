@@ -2,11 +2,15 @@ name: Deploy Production to Azure App Service
 
 on:
   pull_request:
+    types: [closed]
     branches:
-      - main # <--- SEKARANG RESMI DIUBAH KE MAIN, BIAR OTOMATIS JALAN PAS MERGE KE MAIN
+      - main
 
 jobs:
   build-and-deploy:
+    # 🎯 PENGAMAN: Jalankan deployment HANYA jika PR ditutup karena BERHASIL DI-MERGE!
+    # Jika PR ditutup karena di-cancel atau ditolak, proses rilis otomatis dilewati (aman).
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
@@ -72,4 +76,14 @@ jobs:
       run: |
         docker build -t auliyaamalik/absensi-app:latest .
         docker push auliyaamalik/absensi-app:latest
+
+    # ==========================================
+    # 🚀 LANGKAH 5: PICU RESTART & PULL OTOMATIS DI AZURE VIA PUBLISH PROFILE
+    # ==========================================
+    - name: Trigger Azure App Service Container Refresh
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'absensi-pso-14-bwb0amb3d5hxhxcy' # 🎯 PASANG YANG INI
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_AUL }}
+        images: 'auliyaamalik/absensi-app:latest'
 
