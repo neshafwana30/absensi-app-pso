@@ -8,6 +8,7 @@ use App\Models\Presence;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class PresenceController extends Controller
@@ -37,11 +38,15 @@ class PresenceController extends Controller
     {
         $code = request('code');
         $qrcode = $this->getQrCode($code);
+        
+        // 🎯 AMBA: Cari data absensi asli berdasarkan string unik code di URL
+        $attendance = Attendance::where('code', $code)->firstOrFail();
 
         return view('presences.qrcode', [
             "title" => "Generate Absensi QRCode",
             "qrcode" => $qrcode,
-            "code" => $code
+            "code" => $code,
+            "attendance" => $attendance // Wajib dilempar biar Blade gak bingung nyari $attendance->id
         ]);
     }
 
@@ -212,5 +217,20 @@ class PresenceController extends Controller
                 ];
         }
         return $notPresentData;
+    }
+
+    public function regenerateQrCode(Attendance $attendance)
+    {
+        // 1. Acak string unik baru sepanjang 16 karakter
+        $newCode = Str::random(16);
+
+        // 2. Update langsung kolom code absensinya
+        $attendance->update([
+            'code' => $newCode
+        ]);
+
+        // 3. Alihkan balik ke halaman tampilan QR membawa string kode baru
+        return redirect()->route('presences.qrcode', ['code' => $newCode])
+            ->with('success', 'QR Code berhasil diperbarui!');
     }
 }
