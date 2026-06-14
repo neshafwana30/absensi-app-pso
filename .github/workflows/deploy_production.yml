@@ -83,7 +83,7 @@ jobs:
     - name: Trigger Azure App Service Container Refresh
       uses: azure/webapps-deploy@v3
       with:
-        app-name: 'absensi-pso-14-bwb0amb3d5hxhxcy' # 🎯 PASANG YANG INI
+        app-name: 'absensi-pso-14' # 🎯 PASANG YANG INI
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_AUL }}
         images: 'auliyaamalik/absensi-app:latest'
 
