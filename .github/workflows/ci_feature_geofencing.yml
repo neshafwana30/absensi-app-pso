@@ -1,0 +1,118 @@
+name: Continuous Integration - Feature Testing Geofencing & Assets Build
+
+on:
+  push:
+    branches: ["feature/geofencing"] # 🚀 Sesuaikan dengan nama branch git kamu
+
+jobs:
+  # ==========================================
+  # 🧪 JOB 1: PHPUnit Testing (Geofencing Presence Only)
+  # ==========================================
+  run-phpunit-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: absensi_db_testing
+          POSTGRES_USER: dev_user
+          POSTGRES_PASSWORD: secret_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U dev_user"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_DATABASE: absensi_db_testing
+      DB_USERNAME: dev_user
+      DB_PASSWORD: secret_password
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring, dom, fileinfo, pdo, pdo_pgsql
+
+      - name: Copy .env.testing
+        run: |
+          php -r "file_exists('.env.testing') || copy('.env.example', '.env.testing');"
+
+      - name: Install PHP Dependencies
+        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist --ignore-platform-reqs
+
+      - name: Generate Application Key
+        run: php artisan key:generate --env=testing
+
+      - name: Run Database Migration
+        run: php artisan migrate --force --env=testing
+
+      # 🎯 KUNCI UTAMA: Hanya mengeksekusi file testing fitur geofencing reaktif kamu
+      - name: Execute PHPUnit Test (Geofencing Only)
+        run: php artisan test tests/Feature/PresenceFormTest.php
+
+  # ==========================================
+  # 🐘 JOB 2: BACKEND BUILD & ARTIFACT
+  # ==========================================
+  build-backend:
+    runs-on: ubuntu-latest
+    needs: run-phpunit-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring, dom, fileinfo, pdo, pdo_pgsql
+
+      - name: Install PHP Dependencies
+        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist --ignore-platform-reqs
+
+      - name: Upload Vendor Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-vendor-geofencing
+          path: vendor/
+
+  # ==========================================
+  # 🎨 JOB 3: FRONTEND BUILD & ARTIFACT
+  # ==========================================
+  build-frontend:
+    runs-on: ubuntu-latest
+    needs: run-phpunit-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js v16
+        uses: actions/setup-node@v4
+        with:
+          node-version: "16"
+          cache: "npm"
+
+      - name: Install Frontend Dependencies
+        run: |
+          npm install laravel-mix@6.0.43 webpack@5.65.0 webpack-cli@4.9.1 postcss@8.4.5 --save-dev --legacy-peer-deps
+
+      - name: Compile Assets
+        run: npm run prod
+
+      - name: Upload Public Assets Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-assets-geofencing
+          path: public/
