@@ -6,7 +6,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 overflow-hidden">
-                <img src="{{ asset('images/banner2.jpeg') }}"
+                <img src="{{ asset('images/banner3.jpeg') }}"
                      class="img-fluid w-100"
                      alt="Banner Informasi Karyawan"
                      style="max-height: 260px; object-fit: cover;">
