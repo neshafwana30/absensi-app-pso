@@ -2,15 +2,11 @@ name: Deploy Production to Azure App Service
 
 on:
   pull_request:
-    types: [closed]
     branches:
       - main
 
 jobs:
   build-and-deploy:
-    # 🎯 PENGAMAN: Jalankan deployment HANYA jika PR ditutup karena BERHASIL DI-MERGE!
-    # Jika PR ditutup karena di-cancel atau ditolak, proses rilis otomatis dilewati (aman).
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
