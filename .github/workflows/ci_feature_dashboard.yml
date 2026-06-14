@@ -61,8 +61,7 @@ jobs:
         run: php artisan migrate --force --env=testing
 
       - name: Execute PHPUnit Test
-        # 🟢 Mengeksekusi file test absensi kamu yang tadi sukses 7 passed!
-        run: php artisan test tests/Feature/AttendanceTest.php
+        run: php artisan test tests/Feature/DashboardUserTest.php
 
   # ==========================================
   # 🐘 JOB 2: BACKEND BUILD & ARTIFACT
