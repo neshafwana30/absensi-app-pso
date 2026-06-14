@@ -2,7 +2,7 @@ name: Continuous Integration - Feature Testing Geofencing & Assets Build
 
 on:
   push:
-    branches: ["feature/geofencing-presence"] # 🚀 Sesuaikan dengan nama branch git kamu
+    branches: ["feature/geofencing"] # 🚀 Sesuaikan dengan nama branch git kamu
 
 jobs:
   # ==========================================
