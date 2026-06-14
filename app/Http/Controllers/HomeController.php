@@ -50,8 +50,8 @@ class HomeController extends Controller
         return view('home.index', compact('attendances', 'title'));
     }
 
-    /**
-     * Menampilkan halaman detail sesi absensi
+/**
+     * Menampilkan halaman detail sesi absensi (Historical Terbatasi Sejak Sesi Dibuat)
      */
     public function show(Attendance $attendance)
     {
@@ -85,8 +85,15 @@ class HomeController extends Controller
             ->orderBy('presence_date', 'desc')
             ->get();
 
+        // 🎯 KUNCI UTAMA: Hitung selisih hari sejak sesi absensi diciptakan harian
+        $attendanceCreatedAt = Carbon::parse($attendance->created_at)->startOfDay();
+        $currentDay = Carbon::today();
+
+        $diffInDays = $currentDay->diffInDays($attendanceCreatedAt);
+        $limitDays = min($diffInDays + 1, 30); // Ambil nilai terkecil, maksimal mentok 30 hari
+
         $priodDate = [];
-        for ($i = 0; $i < 30; $i++) {
+        for ($i = 0; $i < $limitDays; $i++) {
             $priodDate[] = now()->subDays($i)->toDateString();
         }
 
