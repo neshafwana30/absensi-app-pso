@@ -2,7 +2,6 @@ name: Continuous Deployment to Staging
 
 on:
   pull_request:
-    types: [closed]
     branches: ["development"]
 
 jobs:
@@ -10,8 +9,6 @@ jobs:
   # 🧪 JOB 1: PHPUnit Testing (Selalu Jalan untuk Memastikan Code Aman)
   # ==========================================
   run-phpunit-test:
-    # 🎯 PENGAMAN: Seluruh rangkaian deploy hanya jalan jika PR ke development SUKSES DI-MERGE!
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     services:
