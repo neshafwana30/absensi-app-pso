@@ -10,10 +10,45 @@ use Carbon\Carbon;
 class HomeController extends Controller
 {
     /**
-     * 1. FUNGSI ABSEN MASUK (Strict Range Waktu Berulang Harian)
+     * Fungsi Helper: Menghitung jarak antara 2 koordinat (Rumus Haversine)
+     */
+    private function isOutsideRadius($userLat, $userLng)
+    {
+        // Jika parameter tidak dikirim dari frontend, langsung tolak
+        if (!$userLat || !$userLng) {
+            return true; 
+        }
+
+        $centerLat = config('attendance.office_latitude');
+        $centerLng = config('attendance.office_longitude');
+        $maxRadius = config('attendance.allowed_radius_meters');
+
+        $earthRadius = 6371000; // Radius bumi dalam satuan meter
+
+        $latDelta = deg2rad($userLat - $centerLat);
+        $lngDelta = deg2rad($userLng - $centerLng);
+
+        $a = sin($latDelta / 2) * sin($latDelta / 2) +
+             cos(deg2rad($centerLat)) * cos(deg2rad($userLat)) *
+             sin($lngDelta / 2) * sin($lngDelta / 2);
+             
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        $distance = $earthRadius * $c; // Hasil jarak dalam meter
+
+        return $distance > $maxRadius;
+    }
+
+    /**
+     * 1. FUNGSI ABSEN MASUK (Strict Range Waktu Berulang Harian + Radius Validation)
      */
     public function sendEnterPresenceUsingQRCode(Request $request)
     {
+        
+        // 🚨 VALIDATION RADIUS: Cek apakah user berada di luar jangkauan
+        if ($this->isOutsideRadius($request->latitude, $request->longitude)) {
+            return response()->json(['message' => 'Absen gagal! Anda berada di luar radius lokasi yang diizinkan.'], 403);
+        }
+
         // Cari sesi absensi berdasarkan code QR yang di-scan
         $attendance = Attendance::where('code', $request->code)->first();
 
@@ -58,7 +93,7 @@ class HomeController extends Controller
     }
 
     /**
-     * 2. FUNGSI ABSEN PULANG (Strict Range Waktu Berulang Harian)
+     * 2. FUNGSI ABSEN PULANG (Strict Range Waktu Berulang Harian + Radius Validation)
      */
     public function sendOutPresenceUsingQRCode(Request $request)
     {
@@ -72,6 +107,11 @@ class HomeController extends Controller
                 return response()->json(['message' => 'Bypass absen pulang sukses!'], 200);
             }
             return response()->json(['message' => 'Data absen masuk hari ini tidak ditemukan.'], 400);
+        }
+
+        // 🚨 VALIDATION RADIUS: Cek apakah user berada di luar jangkauan saat mau pulang
+        if ($this->isOutsideRadius($request->latitude, $request->longitude)) {
+            return response()->json(['message' => 'Absen pulang gagal! Anda berada di luar radius lokasi yang diizinkan.'], 403);
         }
 
         $attendance = Attendance::where('code', $request->code)->first();
@@ -121,38 +161,30 @@ class HomeController extends Controller
      */
     public function index()
     {
-        // 1. Ambil data sesi absensi harian seperti semula
         $attendances = Attendance::all();
-
-        // 2. 🎯 FIX UTAMA: Definisikan variabel $title yang dicari oleh layout master HTML kamu
         $title = "Dashboard Karyawan";
-
-        // Lempar kedua variabel tersebut ke view menggunakan compact
         return view('home.index', compact('attendances', 'title'));
     }
 
     /**
-     * Menampilkan halaman detail sesi absensi (Tempat scan QR, info libur, & histori 30 hari)
+     * Menampilkan halaman detail sesi absensi
      */
     public function show(Attendance $attendance)
     {
         $userId = auth()->id();
         $today = now()->toDateString();
 
-        // 1. Ambil data riwayat kehadiran user untuk sesi ini pada hari berjalan
         $presence = Presence::where('user_id', $userId)
             ->where('attendance_id', $attendance->id)
             ->where('presence_date', $today)
             ->first();
 
-        // 2. Cek status perizinan hari ini untuk sesi absensi terkait
         $isTherePermission = \App\Models\Permission::where('user_id', $userId)
             ->where('attendance_id', $attendance->id)
             ->where('permission_date', $today)
             ->where('is_accepted', true)
             ->exists();
 
-        // 3. Menyusun array $data sesuai dengan properti yang dicari oleh View kelompokmu
         $data = [
             'is_there_permission' => $isTherePermission,
             'is_has_enter_today'  => $presence && $presence->presence_enter_time !== null,
@@ -164,7 +196,6 @@ class HomeController extends Controller
                 ->exists(),
         ];
 
-        // 4. Generate data histori 30 hari terakhir untuk tabel log bawah
         $history = Presence::where('user_id', $userId)
             ->where('attendance_id', $attendance->id)
             ->orderBy('presence_date', 'desc')
@@ -175,10 +206,8 @@ class HomeController extends Controller
             $priodDate[] = now()->subDays($i)->toDateString();
         }
 
-        // 5. 🎯 FIX UTAMA: Definisikan variabel title untuk tab browser layout master
         $title = "Detail Absensi - " . $attendance->title;
 
-        // 6. Ambil data libur nasional (dari DB local / fallback API)
         $holiday = \App\Models\Holiday::where('holiday_date', $today)->first();
         if (!$holiday) {
             try {
@@ -202,7 +231,6 @@ class HomeController extends Controller
             }
         }
 
-        // 7. Masukkan 'title' ke dalam compact()
         return view('home.show', compact('attendance', 'presence', 'holiday', 'data', 'priodDate', 'history', 'title'));
     }
 

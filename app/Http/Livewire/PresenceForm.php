@@ -11,17 +11,56 @@ class PresenceForm extends Component
     public Attendance $attendance;
     public $holiday;
     public $data;
+    
+    // 🎯 Properti Penampung Koordinat dari Frontend
+    public $latitude;
+    public $longitude;
 
     public function mount(Attendance $attendance)
     {
         $this->attendance = $attendance;
     }
 
-    // NOTED: setiap method send presence agar lebih aman seharusnya menggunakan if statement seperti diviewnya
+    /**
+     * Fungsi Helper: Menghitung jarak radius (Haversine Formula)
+     */
+    private function isOutsideRadius()
+    {
+        // Tolak jika device gagal mengirim koordinat GPS
+        if (!$this->latitude || !$this->longitude) {
+            return true;
+        }
+
+        $centerLat = config('attendance.office_latitude');
+        $centerLng = config('attendance.office_longitude');
+        $maxRadius = config('attendance.allowed_radius_meters');
+
+        $earthRadius = 6371000; // Satuan Meter
+
+        $latDelta = deg2rad($this->latitude - $centerLat);
+        $lngDelta = deg2rad($this->longitude - $centerLng);
+
+        $a = sin($latDelta / 2) * sin($latDelta / 2) +
+             cos(deg2rad($centerLat)) * cos(deg2rad($this->latitude)) *
+             sin($lngDelta / 2) * sin($lngDelta / 2);
+             
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        $distance = $earthRadius * $c;
+
+        return $distance > $maxRadius;
+    }
 
     public function sendEnterPresence()
     {
-        if ($this->attendance->data->is_start && !$this->attendance->data->is_using_qrcode) { // sama (harus) dengan view
+        // 🚨 VALIDASI GEOPOSITION RADIUS MASUK
+        if ($this->isOutsideRadius()) {
+            return $this->dispatchBrowserEvent('showToast', [
+                'success' => false, 
+                'message' => "Absen masuk gagal! Anda berada di luar radius lokasi kantor yang diizinkan."
+            ]);
+        }
+
+        if ($this->attendance->data->is_start && !$this->attendance->data->is_using_qrcode) {
             Presence::create([
                 "user_id" => auth()->user()->id,
                 "attendance_id" => $this->attendance->id,
@@ -30,7 +69,6 @@ class PresenceForm extends Component
                 "presence_out_time" => null
             ]);
 
-            // untuk refresh if statement
             $this->data['is_has_enter_today'] = true;
             $this->data['is_not_out_yet'] = true;
 
@@ -40,8 +78,15 @@ class PresenceForm extends Component
 
     public function sendOutPresence()
     {
-        // jika absensi sudah jam pulang (is_end) dan tidak menggunakan qrcode (kebalikan)
-        if (!$this->attendance->data->is_end && $this->attendance->data->is_using_qrcode) // sama (harus) dengan view
+        // 🚨 VALIDASI GEOPOSITION RADIUS PULANG
+        if ($this->isOutsideRadius()) {
+            return $this->dispatchBrowserEvent('showToast', [
+                'success' => false, 
+                'message' => "Absen pulang gagal! Anda berada di luar radius lokasi kantor yang diizinkan."
+            ]);
+        }
+
+        if (!$this->attendance->data->is_end && $this->attendance->data->is_using_qrcode)
             return false;
 
         $presence = Presence::query()
@@ -51,10 +96,9 @@ class PresenceForm extends Component
             ->where('presence_out_time', null)
             ->first();
 
-        if (!$presence) // hanya untuk sekedar keamanan (kemungkinan)
+        if (!$presence)
             return $this->dispatchBrowserEvent('showToast', ['success' => false, 'message' => "Terjadi masalah pada saat melakukan absensi."]);
 
-        // untuk refresh if statement
         $this->data['is_not_out_yet'] = false;
         $presence->update(['presence_out_time' => now()->toTimeString()]);
         return $this->dispatchBrowserEvent('showToast', ['success' => true, 'message' => "Atas nama '" . auth()->user()->name . "' berhasil melakukan absensi pulang."]);
