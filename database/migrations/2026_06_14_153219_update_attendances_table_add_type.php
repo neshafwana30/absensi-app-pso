@@ -13,11 +13,12 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('attendances', function (Blueprint $table) {
-            // Menambahkan kolom type untuk kategori absensi
-            // defaultnya 'kantor' agar data lama tidak error
-            $table->string('type')->default('kantor')->after('description');
-        });
+        // Memastikan kolom 'type' belum ada sebelum menambahkannya
+        if (!Schema::hasColumn('attendances', 'type')) {
+            Schema::table('attendances', function (Blueprint $table) {
+                $table->string('type')->default('kantor')->after('description');
+            });
+        }
     }
 
     /**
@@ -27,9 +28,11 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('attendances', function (Blueprint $table) {
-            // Menghapus kolom type jika migration di-rollback
-            $table->dropColumn('type');
-        });
+        // Memastikan kolom 'type' ada sebelum menghapusnya
+        if (Schema::hasColumn('attendances', 'type')) {
+            Schema::table('attendances', function (Blueprint $table) {
+                $table->dropColumn('type');
+            });
+        }
     }
 };
