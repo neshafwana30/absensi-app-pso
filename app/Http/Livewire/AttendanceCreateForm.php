@@ -16,6 +16,14 @@ class AttendanceCreateForm extends AttendanceAbstract
 
         $position_ids = array_values($this->position_ids);
 
+        // Mencegah error dan memastikan default:
+        $this->attendance['type'] = $this->attendance['type'] ?? 'harian';
+        
+        // Jika tipenya harian, pastikan tanggal kegiatannya dikosongkan
+        if ($this->attendance['type'] === 'harian') {
+            $this->attendance['activity_date'] = null;
+        }
+
         $this->validate();
 
         if (array_key_exists("code", $this->attendance) && $this->attendance['code']) // jika menggunakan qrcode

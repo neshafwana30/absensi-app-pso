@@ -5,81 +5,67 @@ namespace App\Http\Controllers;
 use App\Models\Position;
 use App\Models\User;
 use App\Models\Presence;
+use App\Models\Attendance;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    // Tambahkan Request $request untuk menangkap filter dari URL
     public function index(Request $request) 
     {
         $today = Carbon::today();
         
-        // Menangkap pilihan dropdown user (bisa null jika memilih "Semua Jabatan")
-        $selectedPosition = $request->get('position_id');
-
-        // 1. Ambil semua list jabatan untuk di-looping di Dropdown HTML
+        // Data untuk Dropdown
+        $allAttendances = Attendance::all();
         $positions = Position::all();
-        $positionCount = $positions->count();
+        
+        // Filter ID
+        $attendanceId = $request->input('attendance_id');
+        $positionId = $request->input('position_id');
 
-        // 2. Hitung Total User (Berdasarkan filter jika ada)
-        $userQuery = User::query();
-        if ($selectedPosition) {
-            $userQuery->where('position_id', $selectedPosition);
+        // Force default ke absen pertama jika belum ada filter
+        if (!$attendanceId && $allAttendances->isNotEmpty()) {
+            $attendanceId = $allAttendances->first()->id;
         }
-        $totalUsers = $userQuery->count();
 
-        // 3. DATA REAL-TIME HARI INI
+        // Query Kehadiran
         $presentQuery = Presence::whereDate('created_at', $today)->where('is_permission', false);
         $permissionQuery = Presence::whereDate('created_at', $today)->where('is_permission', true);
 
-        // Jika filter jabatan aktif, saring absensi berdasarkan relasi tabel User-nya
-        if ($selectedPosition) {
-            $presentQuery->whereHas('user', function($q) use ($selectedPosition) {
-                $q->where('position_id', $selectedPosition);
-            });
-            $permissionQuery->whereHas('user', function($q) use ($selectedPosition) {
-                $q->where('position_id', $selectedPosition);
-            });
+        // Filter berdasar Absensi yang dipilih
+        if ($attendanceId) {
+            $presentQuery->where('attendance_id', $attendanceId);
+            $permissionQuery->where('attendance_id', $attendanceId);
+        }
+
+        // Filter Jabatan
+        if ($positionId) {
+            $presentQuery->whereHas('user', fn($q) => $q->where('position_id', $positionId));
+            $permissionQuery->whereHas('user', fn($q) => $q->where('position_id', $positionId));
         }
 
         $presentToday = $presentQuery->count();
         $permissionToday = $permissionQuery->count();
-        
-        // Hitung Alpa
-        $absentToday = $totalUsers - ($presentToday + $permissionToday);
-        $absentToday = $absentToday < 0 ? 0 : $absentToday;
+        $totalUsers = $positionId ? User::where('position_id', $positionId)->count() : User::count();
+        $absentToday = max(0, $totalUsers - ($presentToday + $permissionToday));
 
-        // 4. DATA GRAFIK (7 HARI TERAKHIR)
-        $chartLabels = [];
+        // Grafik (5 Hari)
         $chartData = [];
-
-        for ($i = 6; $i >= 0; $i--) {
+        for ($i = 4; $i >= 0; $i--) {
             $date = Carbon::today()->subDays($i);
-            $chartLabels[] = $date->translatedFormat('l'); 
-
-            $dailyQuery = Presence::whereDate('created_at', $date)->where('is_permission', false);
-            
-            // Filter grafik berdasarkan jabatan juga
-            if ($selectedPosition) {
-                $dailyQuery->whereHas('user', function($q) use ($selectedPosition) {
-                    $q->where('position_id', $selectedPosition);
-                });
-            }
-            $chartData[] = $dailyQuery->count();
+            $count = Presence::whereDate('created_at', $date)
+                ->where('attendance_id', $attendanceId ?? 0)
+                ->where('is_permission', false)
+                ->count();
+            $chartData[] = max(0, $count);
         }
 
-        return view('dashboard.index', [
-            "title" => "Dashboard",
-            "positionCount" => $positionCount,
-            "userCount" => $totalUsers,
-            "presentToday" => $presentToday,
-            "permissionToday" => $permissionToday,
-            "absentToday" => $absentToday,
-            "chartLabels" => $chartLabels,
-            "chartData" => $chartData,
-            "positions" => $positions, // Mengirim data jabatan ke view
-            "selectedPosition" => $selectedPosition // Menyimpan state pilihan terakhir
-        ]);
+        // Definisikan variabel title untuk layout induk
+        $title = "Dashboard Absensi";
+
+        return view('dashboard.index', compact(
+            'title', 'allAttendances', 'positions', 'attendanceId', 'positionId', 
+            'presentToday', 'permissionToday', 'absentToday', 'totalUsers', 'chartData'
+        ));
     }
 }

@@ -4,7 +4,7 @@
         <div class="w-100">
             <div class="mb-3">
                 <x-form-label id="title" label='Nama/Judul Absensi' />
-                <x-form-input id="title" name="title" wire:model.defer="attendance.title" />
+                <x-form-input id="title" name="title" wire:model.defer="attendance.title" placeholder="Contoh: Absen Kantor, Absen Padel, Rapat Mingguan" />
                 <x-form-error key="attendance.title" />
             </div>
             <div class="mb-3">
@@ -13,6 +13,7 @@
                     wire:model.defer="attendance.description"></textarea>
                 <x-form-error key="attendance.description" />
             </div>
+
             <div class="mb-3">
                 <div class="row">
                     <div class="col-md-6">
@@ -64,9 +65,7 @@
                 </div>
                 <small class="text-muted d-block mt-1">Pilih posisi karyawaan yang akan menggunakan absensi ini.</small>
                 <x-form-error key="position_ids" />
-                {{-- tom-select init script ada di create.blade.php attendances --}}
             </div>
-
 
             <div class="mb-3">
                 <x-form-label id="flexCheckCode" label='Ingin Menggunakan QRCode (default menggunakan tombol)' />
