@@ -31,10 +31,11 @@ class ForcePasswordController extends Controller
             'must_change_password' => false,
         ]);
 
-        return redirect(
-            $user->isUser()
-                ? route('home.index')
-                : route('dashboard.index')
-        )->with('success', 'Password berhasil diperbarui.');
+        session()->flash('success', 'Password berhasil diperbarui.');
+
+        return response('', 302)->header(
+            'Location',
+            $user->isUser() ? '/' : '/dashboard'
+        );
     }
 }

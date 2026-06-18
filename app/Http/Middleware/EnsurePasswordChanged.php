@@ -16,7 +16,7 @@ class EnsurePasswordChanged
             !$request->routeIs('password.force.update') &&
             !$request->routeIs('auth.logout')
         ) {
-            return redirect()->route('password.force.form');
+            return response('', 302)->header('Location', '/force-change-password');
         }
 
         return $next($request);

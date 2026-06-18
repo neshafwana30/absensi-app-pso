@@ -8,7 +8,8 @@
     <div class="w-100">
 
         <main class="form-signin w-100 m-auto">
-            <form method="POST" action="{{ route('auth.login') }}" id="login-form">
+            <form method="POST" action="/login" id="login-form">
+                @csrf
                 <h1 class="h3 mb-3 fw-normal">Silahkan masuk untuk absensi</h1>
 
                 <div class="form-floating">

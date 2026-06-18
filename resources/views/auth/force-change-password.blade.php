@@ -23,7 +23,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('password.force.update') }}">
+        <form method="POST" action="/force-change-password">
             @csrf
 
             <div style="margin-bottom: 14px;">
