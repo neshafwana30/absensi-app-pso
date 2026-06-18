@@ -14,6 +14,12 @@ class AttendanceAbstract extends Component
     protected $rules = [
         'attendance.title' => 'required|string|min:6',
         'attendance.description' => 'required|string|max:500',
+        
+        // --- INI VALIDASI TAMBAHAN BARUNYA ---
+        'attendance.type' => 'nullable|in:harian,kegiatan',
+        'attendance.activity_date' => 'nullable|date',
+        // -------------------------------------
+
         'attendance.start_time' => 'required|date_format:H:i',
         'attendance.batas_start_time' => 'required|date_format:H:i|after:start_time',
         'attendance.end_time' => 'required|date_format:H:i',

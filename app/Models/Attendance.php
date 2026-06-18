@@ -18,6 +18,8 @@ class Attendance extends Model
     protected $fillable = [
         'title',
         'description',
+        'type',
+        'activity_date',
         'start_time',
         'batas_start_time',
         'end_time',
@@ -42,6 +44,9 @@ class Attendance extends Model
                     ->where('holiday_date', now()->toDateString())
                     ->get();
 
+                // Jika tipe absensi adalah kegiatan, abaikan status hari libur rutin
+                $isHoliday = $this->type === 'kegiatan' ? false : $isHolidayToday->isNotEmpty();
+
                 return (object) [
                     "start_time" => $this->start_time,
                     "batas_start_time" => $this->batas_start_time,
@@ -51,7 +56,9 @@ class Attendance extends Model
                     "is_start" => $startTime <= $now && $batasStartTime >= $now,
                     "is_end" => $endTime <= $now && $batasEndTime >= $now,
                     'is_using_qrcode' => $this->code ? true : false,
-                    'is_holiday_today' => $isHolidayToday->isNotEmpty()
+                    'is_holiday_today' => $isHoliday,
+                    'type' => $this->type,
+                    'activity_date' => $this->activity_date
                 ];
             },
         );

@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Position;
 use App\Models\Role;
+use App\Models\Attendance; // Wajib ditambahkan agar bisa memanggil tabel attendances
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -42,5 +43,21 @@ class DatabaseSeeder extends Seeder
                 'position_id' => $jabatan->id
             ]);
         }
+
+        // 4. Pembuatan Master Absensi Pertama (Wajib agar PresenceSeeder jalan)
+        $attendance = Attendance::create([
+            'title' => 'Absen Kantor Reguler',
+            'description' => 'Absensi harian wajib karyawan',
+            'start_time' => '06:00',
+            'batas_start_time' => '09:00',
+            'end_time' => '16:00',
+            'batas_end_time' => '19:00',
+        ]);
+
+        // Kaitkan absen ini ke semua jabatan yang ada (biar semua user bisa lihat absennya)
+        $attendance->positions()->attach($semuaJabatan->pluck('id'));
+
+        // 5. Jalankan Presence Seeder untuk membuat riwayat absen dummy 7 hari lalu
+        $this->call(PresenceSeeder::class);
     }
 }
