@@ -2,7 +2,7 @@ name: 🚀 AUTOMATED DEMO - Parallel Staging & Production Pipeline
 
 on:
   push:
-    branches: ["main"] # Jalat otomatis pas git push origin demo
+    branches: ["main"] 
 
 jobs:
   # ==========================================
@@ -58,14 +58,14 @@ jobs:
         run: php artisan migrate --force --env=testing
 
       - name: Execute PHPUnit Test
-        run: php artisan test --no-tty
+        run: php artisan test 
 
   # ==========================================
   # 🔵 JOB 2: DEPLOY TO STAGING (NESHA WORKFLOW)
   # ==========================================
   deploy-staging:
     runs-on: ubuntu-latest
-    needs: run-phpunit-test # 🔥 Jalan setelah test lulus
+    needs: run-phpunit-test # Jalan paralel setelah test lulus
 
     steps:
       - name: Checkout Code
@@ -119,7 +119,7 @@ jobs:
   # ==========================================
   deploy-production:
     runs-on: ubuntu-latest
-    needs: run-phpunit-test # 🔥 Jalan PARALEL bareng Staging setelah test lulus!
+    needs: run-phpunit-test # Jalan PARALEL bareng Staging setelah test lulus!
 
     steps:
       - name: Checkout Code
