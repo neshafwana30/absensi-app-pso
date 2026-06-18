@@ -12,7 +12,7 @@ class PresenceForm extends Component
     public Attendance $attendance;
     public $holiday;
     public $data;
-    
+
     // Properti koordinat GPS
     public $latitude;
     public $longitude;
@@ -40,7 +40,7 @@ class PresenceForm extends Component
         $a = sin($latDelta / 2) * sin($latDelta / 2) +
              cos(deg2rad($centerLat)) * cos(deg2rad($this->latitude)) *
              sin($lngDelta / 2) * sin($lngDelta / 2);
-             
+
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
         $distance = $earthRadius * $c;
 
@@ -48,7 +48,7 @@ class PresenceForm extends Component
     }
 
     // --- FUNGSI ABSEN MANUAL (AMBA / AMAN BANGET) ---
-    
+
     public function sendEnterPresence()
     {
         if ($this->isOutsideRadius()) {
@@ -104,7 +104,7 @@ class PresenceForm extends Component
 
         $this->data['is_not_out_yet'] = false;
         $presence->update(['presence_out_time' => $now->toTimeString()]);
-        
+
         return $this->dispatchBrowserEvent('showToast', ['success' => true, 'message' => "Berhasil absen pulang."]);
     }
 
@@ -154,7 +154,7 @@ class PresenceForm extends Component
         } catch (\Throwable $e) {
             // 🎯 JIKA ADA BUG, MUNCULKAN DI LAYAR BUKAN DI SERVER ERROR
             return $this->dispatchBrowserEvent('showToast', [
-                'success' => false, 
+                'success' => false,
                 'message' => "Terciduk Bug: " . $e->getMessage() . " (Baris: " . $e->getLine() . ")"
             ]);
         }
@@ -203,7 +203,7 @@ class PresenceForm extends Component
         } catch (\Throwable $e) {
             // 🎯 JIKA ADA BUG, MUNCULKAN DI LAYAR BUKAN DI SERVER ERROR
             return $this->dispatchBrowserEvent('showToast', [
-                'success' => false, 
+                'success' => false,
                 'message' => "Terciduk Bug: " . $e->getMessage() . " (Baris: " . $e->getLine() . ")"
             ]);
         }
