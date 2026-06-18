@@ -21,10 +21,16 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $remember)) { // login gagal
             request()->session()->regenerate();
+            $user = auth()->user();
+
             $data = [
                 "success" => true,
-                "redirect_to" => auth()->user()->isUser() ? route('home.index') : route('dashboard.index'),
-                "message" => "Login berhasil, silahkan tunggu!"
+                "redirect_to" => $user->must_change_password
+                    ? route('password.force.form')
+                    : ($user->isUser() ? route('home.index') : route('dashboard.index')),
+                "message" => $user->must_change_password
+                    ? "Silakan ganti password terlebih dahulu."
+                    : "Login berhasil, silahkan tunggu!"
             ];
             return response()->json($data);
         }

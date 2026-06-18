@@ -22,12 +22,13 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'role_id',
-        'position_id',
-        'phone',
+    'name',
+    'email',
+    'password',
+    'role_id',
+    'position_id',
+    'phone',
+    'must_change_password',
     ];
 
     /**
@@ -46,7 +47,8 @@ class User extends Authenticatable
      * @var array<string, string>
      */
     protected $casts = [
-        'email_verified_at' => 'datetime',
+    'email_verified_at' => 'datetime',
+    'must_change_password' => 'boolean',
     ];
 
     public function role()
