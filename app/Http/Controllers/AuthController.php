@@ -21,19 +21,35 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $remember)) { // login gagal
             request()->session()->regenerate();
+            $user = auth()->user();
+
             $data = [
                 "success" => true,
-                "redirect_to" => auth()->user()->isUser() ? route('home.index') : route('dashboard.index'),
-                "message" => "Login berhasil, silahkan tunggu!"
+                "redirect_to" => $user->must_change_password
+                    ? '/force-change-password'
+                    : ($user->isUser() ? '/' : '/dashboard'),
+                "message" => $user->must_change_password
+                    ? "Silakan ganti password terlebih dahulu."
+                    : "Login berhasil, silahkan tunggu!"
             ];
-            return response()->json($data);
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json($data);
+            }
+
+            return response("", 302)->header("Location", $data["redirect_to"]);
         }
 
         $data = [
             "success" => false,
             "message" => "Login gagal, silahkan coba lagi!"
         ];
-        return response()->json($data)->setStatusCode(400);
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json($data)->setStatusCode(400);
+        }
+
+        return back()->withErrors([
+            'email' => $data['message'],
+        ])->onlyInput('email');
     }
 
     public function logout()

@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ForcePasswordController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\PresenceController;
 use Illuminate\Support\Facades\Route;
@@ -22,7 +23,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 // GRUP ROUTE YANG WAJIB LOGIN (AUTH)
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'password.changed'])->group(function () {
+
+    // Force Reset Password on First Login
+    Route::get('/force-change-password', [ForcePasswordController::class, 'index'])->name('password.force.form');
+    Route::post('/force-change-password', [ForcePasswordController::class, 'update'])->name('password.force.update');
 
     // ==========================================
     // 🛡️ HAK AKSES: ADMIN & OPERATOR ONLY
