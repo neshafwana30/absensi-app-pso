@@ -1,6 +1,7 @@
 <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse shadow-sm">
     <div class="position-sticky pt-3 px-2">
         <ul class="nav flex-column gap-1">
+            
             @if (auth()->user()->isAdmin() or auth()->user()->isOperator())
             
             <li class="nav-item">
