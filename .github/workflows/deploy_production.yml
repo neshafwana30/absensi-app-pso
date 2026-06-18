@@ -1,85 +1,86 @@
 name: Deploy Production to Azure App Service
 
 on:
-  pull_request:
-    branches:
-      - main
+  # pull_request:
+  #   branches:
+  #     - main
+  push:
+    branches: ["development"]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4 # Diperbarui ke v4 biar sat-set
+      - name: Checkout Code
+        uses: actions/checkout@v4 # Diperbarui ke v4 biar sat-set
 
-    # ==========================================
-    # 🧪 LANGKAH 1: SETUP PHP & RUN MIGRATION PRODUCTION
-    # ==========================================
-    - name: Setup PHP Environment
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.2'
-        extensions: pdo, pdo_pgsql, pgsql, mbstring, dom, fileinfo
+      # ==========================================
+      # 🧪 LANGKAH 1: SETUP PHP & RUN MIGRATION PRODUCTION
+      # ==========================================
+      - name: Setup PHP Environment
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: pdo, pdo_pgsql, pgsql, mbstring, dom, fileinfo
 
-    - name: Install PHP Dependencies
-      run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist --ignore-platform-reqs
+      - name: Install PHP Dependencies
+        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist --ignore-platform-reqs
 
-    - name: Run Database Migration
-      env:
-        DB_CONNECTION: pgsql
-        DB_HOST: db-absensi-pso2.postgres.database.azure.com
-        DB_PORT: 5432
-        DB_DATABASE: absensi_pso_production
-        DB_USERNAME: pso14
-        DB_PASSWORD: ${{ secrets.DB_PRODUCTION_PASSWORD }}
-      run: php artisan migrate --force
+      - name: Run Database Migration
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: db-absensi-pso2.postgres.database.azure.com
+          DB_PORT: 5432
+          DB_DATABASE: absensi_pso_production
+          DB_USERNAME: pso14
+          DB_PASSWORD: ${{ secrets.DB_PRODUCTION_PASSWORD }}
+        run: php artisan migrate --force
 
-    # ==========================================
-    # 🎨 LANGKAH 2: COMPILE FRONTEND ASSETS PRODUCTION (Biar CSS/JS Gak Hilang)
-    # ==========================================
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: "16"
-        cache: "npm"
+      # ==========================================
+      # 🎨 LANGKAH 2: COMPILE FRONTEND ASSETS PRODUCTION (Biar CSS/JS Gak Hilang)
+      # ==========================================
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "16"
+          cache: "npm"
 
-    - name: Install & Compile Frontend Assets
-      run: |
-        npm install laravel-mix@6.0.43 webpack@5.65.0 webpack-cli@4.9.1 postcss@8.4.5 --save-dev --legacy-peer-deps
-        npm run prod
+      - name: Install & Compile Frontend Assets
+        run: |
+          npm install laravel-mix@6.0.43 webpack@5.65.0 webpack-cli@4.9.1 postcss@8.4.5 --save-dev --legacy-peer-deps
+          npm run prod
 
-    # ==========================================
-    # 🧹 LANGKAH 3: LARAVEL OPTIMIZATION
-    # ==========================================
-    - name: Laravel Cache Optimization
-      run: |
-        php artisan config:clear
-        php artisan cache:clear
-        php artisan route:clear
-        php artisan view:clear
+      # ==========================================
+      # 🧹 LANGKAH 3: LARAVEL OPTIMIZATION
+      # ==========================================
+      - name: Laravel Cache Optimization
+        run: |
+          php artisan config:clear
+          php artisan cache:clear
+          php artisan route:clear
+          php artisan view:clear
 
-    # ==========================================
-    # 🐳 LANGKAH 4: DOCKER BUILD & PUSH (AKUN AUL)
-    # ==========================================
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME_AUL }}
-        password: ${{ secrets.DOCKER_PASSWORD_AUL }}
+      # ==========================================
+      # 🐳 LANGKAH 4: DOCKER BUILD & PUSH (AKUN AUL)
+      # ==========================================
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME_AUL }}
+          password: ${{ secrets.DOCKER_PASSWORD_AUL }}
 
-    - name: Build and Push Docker Image
-      run: |
-        docker build -t auliyaamalik/absensi-app:latest .
-        docker push auliyaamalik/absensi-app:latest
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t auliyaamalik/absensi-app:latest .
+          docker push auliyaamalik/absensi-app:latest
 
-    # ==========================================
-    # 🚀 LANGKAH 5: PICU RESTART & PULL OTOMATIS DI AZURE VIA PUBLISH PROFILE
-    # ==========================================
-    - name: Trigger Azure App Service Container Refresh
-      uses: azure/webapps-deploy@v3
-      with:
-        app-name: 'absensi-pso-14' # 🎯 PASANG YANG INI
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_AUL }}
-        images: 'auliyaamalik/absensi-app:latest'
-
+      # ==========================================
+      # 🚀 LANGKAH 5: PICU RESTART & PULL OTOMATIS DI AZURE VIA PUBLISH PROFILE
+      # ==========================================
+      - name: Trigger Azure App Service Container Refresh
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "absensi-pso-14" # 🎯 PASANG YANG INI
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_AUL }}
+          images: "auliyaamalik/absensi-app:latest"
