@@ -16,7 +16,7 @@ class HomeController extends Controller
     {
         // Jika parameter tidak dikirim dari frontend, langsung tolak
         if (!$userLat || !$userLng) {
-            return true; 
+            return true;
         }
 
         $centerLat = config('attendance.office_latitude');
@@ -31,14 +31,14 @@ class HomeController extends Controller
         $a = sin($latDelta / 2) * sin($latDelta / 2) +
              cos(deg2rad($centerLat)) * cos(deg2rad($userLat)) *
              sin($lngDelta / 2) * sin($lngDelta / 2);
-             
+
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
         $distance = $earthRadius * $c; // Hasil jarak dalam meter
 
         return $distance > $maxRadius;
     }
 
-   
+
 
     /**
      * Tampilan Beranda Utama Karyawan
@@ -93,8 +93,11 @@ class HomeController extends Controller
         $limitDays = min($diffInDays + 1, 30); // Ambil nilai terkecil, maksimal mentok 30 hari
 
         $priodDate = [];
-        for ($i = 0; $i < $limitDays; $i++) {
-            $priodDate[] = now()->subDays($i)->toDateString();
+        $attendanceCreatedAt = $attendance->created_at->toDateString();
+        for ($i = 0; $i < 30; $i++) {
+            $date = now()->subDays($i)->toDateString();
+            if ($date < $attendanceCreatedAt) break; // stop kalau sudah sebelum absensi dibuat
+            $priodDate[] = $date;
         }
 
         $title = "Detail Absensi - " . $attendance->title;

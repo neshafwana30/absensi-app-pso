@@ -20,6 +20,7 @@ class UserStats extends Component
 
         $startOfMonth = Carbon::now()->startOfMonth()->toDateString();
         $endOfMonth = Carbon::now()->endOfMonth()->toDateString();
+        $today = Carbon::now()->toDateString();
 
         // 1. HITUNG TOTAL HADIR
         $this->totalHadir = Presence::where('user_id', $userId)
@@ -32,9 +33,13 @@ class UserStats extends Component
             ->where('is_accepted', true)
             ->count();
 
-        // 3. HITUNG TOTAL TIDAK HADIR (ALPA)
+        // 3. HITUNG HARI LIBUR yang sudah lewat di bulan ini
+        $jumlahHariLibur = \App\Models\Holiday::whereBetween('holiday_date', [$startOfMonth, $today])
+            ->count();
+
+        // 4. HITUNG TOTAL TIDAK HADIR (ALPA)
         $daysPassed = Carbon::now()->day;
-        $calculatedAlpa = $daysPassed - ($this->totalHadir + $this->totalIzin);
+        $calculatedAlpa = $daysPassed - $jumlahHariLibur - ($this->totalHadir + $this->totalIzin);
 
         $this->totalTidakHadir = $calculatedAlpa < 0 ? 0 : $calculatedAlpa;
     }
