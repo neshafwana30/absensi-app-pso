@@ -2,7 +2,7 @@ name: 🚀 AUTOMATED DEMO - Parallel Staging & Production Pipeline
 
 on:
   push:
-    branches: ["demo"] # Jalat otomatis pas git push origin demo
+    branches: ["main"] # Jalat otomatis pas git push origin demo
 
 jobs:
   # ==========================================
