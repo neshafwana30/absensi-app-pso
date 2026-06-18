@@ -3,6 +3,9 @@ name: Continuous Deployment to Staging
 on:
   pull_request:
     branches: ["development"]
+  push:
+    branches: ["feature/force-reset-password"]
+  workflow_dispatch:
 
 jobs:
   # ==========================================
