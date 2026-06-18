@@ -58,10 +58,11 @@ final class PresenceTable extends PowerGridComponent
     {
         return Presence::query()
             ->where('attendance_id', $this->attendanceId)
+            // 🎯 KUNCI UTAMA: Hanya ambil data absensi yang tanggalnya HARI INI
+            ->whereDate('presences.presence_date', Carbon::today()->toDateString())
             ->join('users', 'presences.user_id', '=', 'users.id')
             ->select('presences.*', 'users.name as user_name');
     }
-
     /*
     |--------------------------------------------------------------------------
     |  Relationship Search

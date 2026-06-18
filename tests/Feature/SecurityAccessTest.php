@@ -2,16 +2,23 @@
 
 namespace Tests\Feature;
 
+use App\Http\Livewire\PresenceForm; // 🔥 Import Livewire Form untuk menggantikan rute controller lama
 use App\Models\Attendance;
 use App\Models\Presence;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class SecurityAccessTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected $attendance;
+    protected $officeLat;
+    protected $officeLng;
+    protected $defaultDataState;
 
     protected function setUp(): void
     {
@@ -29,30 +36,42 @@ class SecurityAccessTest extends TestCase
             ['id' => 4, 'name' => 'Operator', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
+        // Ambil konfigurasi koordinat kantor harian (Paper Cup Darhus)
+        $this->officeLat = config('attendance.office_latitude');
+        $this->officeLng = config('attendance.office_longitude');
+
+        // Sesi absensi dengan settingan jam pulang yang belum dimulai secara murni
         $this->attendance = Attendance::create([
             'title' => 'Sesi Absen Security Test',
             'description' => 'Untuk uji coba keamanan celah rute',
             'start_time' => '07:00:00',
             'batas_start_time' => '10:00:00',
-            'end_time' => '15:00:00',
+            'end_time' => '15:00:00', // Jam pulang asli jam 3 sore
             'batas_end_time' => '17:00:00',
-            'code' => 'SECURE-ROUTE-TEST'
+            'code' => 'SECURE-ROUTE-TEST',
+            'data' => json_encode([
+                'is_start' => true,
+                'is_end' => false, // Pura-puranya di backend belum masuk waktu pulang
+                'is_using_qrcode' => true,
+                'is_holiday_today' => false
+            ])
         ]);
 
-        $this->attendance->data = (object)[
-            'is_start' => true,
-            'is_end' => false, // Set false: pura-puranya belum jam pulang (tombol sembunyi)
-            'is_using_qrcode' => true,
-            'is_holiday_today' => false
+        // State default array parameter untuk perenderan halaman blade
+        $this->defaultDataState = [
+            'is_there_permission' => false,
+            'is_has_enter_today' => false,
+            'is_not_out_yet' => false,
+            'is_permission_accepted' => false
         ];
     }
 
-   /** 1. Test Kasus Paksa: Karyawan nembak URL absen pulang padahal di web tombolnya gak muncul (Jam 10 Pagi) */
+    /** 1. Test Kasus Paksa: Karyawan nembak fungsi pulang padahal belum jamnya (Jam 10 Pagi) */
     public function test_employee_cannot_force_check_out_if_not_the_time_yet()
     {
         $employee = User::factory()->create(['role_id' => 3, 'position_id' => 1]);
 
-        // Sudah absen masuk jam 8
+        // Sudah absen masuk jam 8 pagi
         $presence = Presence::create([
             'user_id' => $employee->id,
             'attendance_id' => $this->attendance->id,
@@ -61,14 +80,27 @@ class SecurityAccessTest extends TestCase
             'presence_out_time' => null
         ]);
 
-        // Lompat ke jam 10 pagi, lalu coba tembak endpoint POST secara ilegal
+        // Lompat ke jam 10 pagi, lalu coba tembak paksa fungsi pulangnya
         $this->travelTo(now()->setTime(10, 0, 0));
 
-        $response = $this->actingAs($employee)->post(route('home.sendOutPresenceUsingQRCode'), [
-            'code' => 'SECURE-ROUTE-TEST'
-        ]);
+        $this->actingAs($employee);
 
-        // Memastikan kolom presence_out_time di database tetap NULL (tidak bocor/jebol)
+        // Set state mock seolah-olah sudah masuk agar bisa memicu pemicu fungsi sendOut
+        $stateSudahMasuk = $this->defaultDataState;
+        $stateSudahMasuk['is_has_enter_today'] = true;
+        $stateSudahMasuk['is_not_out_yet'] = true;
+
+        // 🔥 UBAH KE LIVEWIRE: Menguji penolakan sistem reaktif dari manipulasi paksa karyawan
+        Livewire::test(PresenceForm::class, [
+            'attendance' => $this->attendance,
+            'data' => $stateSudahMasuk
+        ])
+        ->set('latitude', $this->officeLat) // Masukkan koordinat agar lolos filter radius dulu
+        ->set('longitude', $this->officeLng)
+        ->call('sendOutPresenceUsingQRCode', 'SECURE-ROUTE-TEST')
+        ->assertDispatchedBrowserEvent('showToast'); // Event kegagalan/toast merah akan terlempar
+
+        // Memastikan kolom presence_out_time di database TETAP NULL (tidak bocor/jebol karena dihadang Carbon backend)
         $this->assertDatabaseHas('presences', [
             'id' => $presence->id,
             'presence_out_time' => null

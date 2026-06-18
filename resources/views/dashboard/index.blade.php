@@ -72,7 +72,6 @@
         </div>
     </div>
 </div>
-
 <script>
     const ctx = document.getElementById('attendanceChart').getContext('2d');
     new Chart(ctx, {
